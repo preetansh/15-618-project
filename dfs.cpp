@@ -8,10 +8,8 @@
 
 int d = 0;
 int f = 0;
-std::map<int, int> visited;
 
 void dfs(Graph* g, int root, int** results) {
-	visited[root] = 1;
 	results[0][root] = d;
 	d++;
 
@@ -23,7 +21,7 @@ void dfs(Graph* g, int root, int** results) {
 	for (int i = 0; i < num_neighbours; i++) {
 		int child = neighbours[offset + i];
 
-		if (visited.count(child) == 0) {
+		if (results[0][child] == -1) { // not set in pre-order means not visited
 			results[1][child] = root;
 			dfs(g, child, results);
 		}
