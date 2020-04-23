@@ -6,11 +6,11 @@ class Graph {
 	public :
 	Graph() {}
 
-	std::vector<int> GetOffsets() {
+	int* GetOffsets() {
 		return offsets;
 	}
 
-	std::vector<int> GetNeighbours() {
+	int* GetNeighbours() {
 		return neighbours;
 	}
 
@@ -24,9 +24,11 @@ class Graph {
 
 	void ReadGraph(const char* fname);
 
+	void FreeGraph();
+
 	private :
-	std::vector<int> offsets;
-	std::vector<int> neighbours;
+	int *offsets; // size : nnode + 2
+	int *neighbours; // size : nedges
 	int nnode;
 	int nedges;
 };
