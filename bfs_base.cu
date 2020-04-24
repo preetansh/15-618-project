@@ -33,9 +33,9 @@ bfs_baseline_kernel(int N, int curr, int* levels, int* offsets,
       int v = index;
       if (levels[v] == curr) {
         int num_nbr = offsets[v+1] - offsets[v];
-        int *nbrs = &neighbours[offsets[v]];
+        int offset = offsets[v];
         for(int i = 0; i < num_nbr; i++) {
-          int w = nbrs[i];
+          int w = neighbours[offset + i];
           if (levels[w] == INF) {
             *finished = false;
             levels[w] = curr + 1;
@@ -48,13 +48,13 @@ bfs_baseline_kernel(int N, int curr, int* levels, int* offsets,
 void
 BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
 
-    int totalBytes = sizeof(int) * 2 * N;
+    int totalBytes = sizeof(int) * (2 * N + M + 3);
 
     // start timing
     double startTime = CycleTimer::currentSeconds();
 
     // compute number of blocks and threads per block
-    const int threadsPerBlock = 512;
+    const int threadsPerBlock = 256;
     const int blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
     int nnodes = N;
     int nedges = M;
@@ -66,17 +66,17 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     //
     // allocate device memory buffers on the GPU using cudaMalloc
     //
-    cudaMalloc(&device_offsets, (nnodes+2));
-    cudaMalloc(&device_neighbours, nedges);
-    cudaMalloc(&device_levels, (nnodes+1));
+    cudaMalloc(&device_offsets, (nnodes+2) * sizeof(int));
+    cudaMalloc(&device_neighbours, nedges * sizeof(int));
+    cudaMalloc(&device_levels, (nnodes+1) * sizeof(int));
 
 
     //
     // copy input arrays to the GPU using cudaMemcpy
     //
-    cudaMemcpy(device_offsets, offsets, (nnodes+2), cudaMemcpyHostToDevice);
-    cudaMemcpy(device_neighbours, neighbours, nedges, cudaMemcpyHostToDevice);
-    cudaMemcpy(device_levels, levels, (nnodes + 1), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_offsets, offsets, (nnodes+2) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_neighbours, neighbours, nedges * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_levels, levels, (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
 
 
     // run kernel
@@ -85,7 +85,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     setup_levels_kernel<<<blocks, threadsPerBlock>>>(nnodes, device_levels);
     cudaDeviceSynchronize();
 
-    // run bfs_baseline_kernel
+    // // run bfs_baseline_kernel
     int curr = 0;
     bool finished = true;
     do {
@@ -99,7 +99,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     //
     // copy result from GPU using cudaMemcpy
     //
-    cudaMemcpy(levels, device_levels, (nnodes+1), cudaMemcpyDeviceToHost);
+    cudaMemcpy(levels, device_levels, (nnodes+1) * sizeof(int), cudaMemcpyDeviceToHost);
 
     // end timing after result has been copied back into host memory
     double endTime = CycleTimer::currentSeconds();
