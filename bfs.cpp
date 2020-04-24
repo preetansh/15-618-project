@@ -3,6 +3,7 @@
 #include <queue>
 
 #include "graph.h"
+#include "CycleTimer.h"
 
 void BFSSeq (Graph* g, int* visited) {
 	int nnodes = g->GetNodes();
@@ -41,17 +42,29 @@ void BFSSeq (Graph* g, int* visited) {
 int main()
 {
 	Graph* g = new Graph();
-	g->ReadGraph("sample.mtx");
+
+	double startTime = CycleTimer::currentSeconds();
+	g->ReadGraph("road_usa.mtx");
+	double endTime = CycleTimer::currentSeconds();
+
 	std::cout << "Graph Read. Found " << g->GetNodes() << " nodes and " << g->GetEdges() << " edges" << std::endl;
+	std::cout << "Read completed in " << (endTime - startTime) << std::endl;
 
-	int* visited = (int *)calloc(g->GetNodes()+1, sizeof(int));
-	BFSSeq(g, visited);
+	for (int i = 0; i < 10; i++) {
+		startTime = CycleTimer::currentSeconds();
+		int* visited = (int *)calloc(g->GetNodes()+1, sizeof(int));
+		BFSSeq(g, visited);
+		endTime = CycleTimer::currentSeconds();
+		std::cout << "BFS completed in " << (endTime - startTime) << std::endl;
 
-	for (int i=1; i<=g->GetNodes(); i++) {
-		std::cout << i << ": " << visited[i] << std::endl;
+		for (int i=1; i<=g->GetNodes(); i++) {
+			if (visited[i] == 0) {
+				std::cout << i << ": " << visited[i] << std::endl;
+			}
+		}
+		free(visited);
 	}
 
-	free(visited);
 	g->FreeGraph();
 	delete(g);
 
