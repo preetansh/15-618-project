@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 EXECUTABLE := bfs
 
 CU_FILES   := bfs_base.cu
