@@ -50,11 +50,11 @@ int main()
 {
 	Graph* g = new Graph();
 
-	std::string filename = "sample.mtx";
+	char* filename = "data/ca2010/ca2010.mtx";
 	std::cout << "Reading " << filename << "\n";
 
 	double startTime = CycleTimer::currentSeconds();
-	g->ReadGraph("sample.mtx");
+	g->ReadGraph(filename, true);
 	double endTime = CycleTimer::currentSeconds();
 
 	std::cout << "Graph Read. Found " << g->GetNodes() << " nodes and " << g->GetEdges() << " edges" << std::endl;

@@ -19,7 +19,7 @@ bool is_comment(char *s) {
     return false;
 }
 
-void Graph::ReadGraph(const char* fname) {
+void Graph::ReadGraph(const char* fname, bool isWeighted) {
 
 	FILE *fp;
 	char linebuf[MAXLINE];
@@ -62,7 +62,12 @@ void Graph::ReadGraph(const char* fname) {
 
     int edge_from = -1, edge_to = -1;
     for (int i = 0; i < nnz; i++) {
-    	fscanf(fp, "%d %d\n", &edge_from, &edge_to);
+        if (!isWeighted) {
+            fscanf(fp, "%d %d\n", &edge_from, &edge_to);
+        } else {
+            int weight;
+            fscanf(fp, "%d %d %d\n", &edge_from, &edge_to, &weight);
+        }
 
     	if (adj_lists.count(edge_from) == 0) {
     		std::vector<int> from_list;
