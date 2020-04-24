@@ -34,7 +34,7 @@ int main() {
 	printCudaInfo();
 
 	// run the main cuda program (timing starts inside)
-    BfsCuda(n, m, offsets, neighbours);
+    BfsCuda(n, m, offsets, neighbours, levels);
 
     for (int i = 1; i <= n; i++) {
     	std::cout << "Level for node " << i << " : " << levels[i] << "\n";

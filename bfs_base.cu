@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <iostream>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <driver_functions.h>
@@ -7,6 +7,8 @@
 #include "CycleTimer.h"
 
 #define INF -1
+
+extern float toBW(int bytes, float sec);
 
 __global__ void
 setup_levels_kernel(int N, int* levels) {
@@ -46,6 +48,8 @@ bfs_baseline_kernel(int N, int curr, int* levels, int* offsets,
 void
 BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
 
+    int totalBytes = sizeof(int) * 2 * N;
+
     // start timing
     double startTime = CycleTimer::currentSeconds();
 
@@ -64,7 +68,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     //
     cudaMalloc(&device_offsets, (nnodes+2));
     cudaMalloc(&device_neighbours, nedges);
-    cudaMalloc(&device_levels, (nndoes+1));
+    cudaMalloc(&device_levels, (nnodes+1));
 
 
     //
@@ -72,12 +76,15 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     //
     cudaMemcpy(device_offsets, offsets, (nnodes+2), cudaMemcpyHostToDevice);
     cudaMemcpy(device_neighbours, neighbours, nedges, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_levels, levels, (nnodes + 1), cudaMemcpyHostToDevice);
+
 
     // run kernel
     double startTime2 = CycleTimer::currentSeconds();
     // setup the levels array
     setup_levels_kernel<<<blocks, threadsPerBlock>>>(nnodes, device_levels);
-    cudaThreadSynchronize();
+    cudaDeviceSynchronize();
+
     // run bfs_baseline_kernel
     int curr = 0;
     bool finished = true;
@@ -85,7 +92,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
       finished = true;
       bfs_baseline_kernel<<<blocks, threadsPerBlock>>>(nnodes, curr++,
         device_levels, device_offsets, device_neighbours, &finished);
-      cudaThreadSynchronize();
+      cudaDeviceSynchronize();
     } while(!finished);
     double endTime2 = CycleTimer::currentSeconds();
 
