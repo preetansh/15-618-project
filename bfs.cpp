@@ -4,6 +4,8 @@
 
 #include "graph.h"
 
+void simple_gpu_test_function();
+
 void BFSSeq (Graph* g, int* visited) {
 	int nnodes = g->GetNodes();
 	std::queue<int> pending;
@@ -47,6 +49,11 @@ int main()
 	for (int i=1; i<g->GetNodes(); i++) {
 		std::cout << i << ": " << visited[i] << std::endl;
 	}
+
+	// test GPU 
+	std::cout << "Testing GPU" << std::endl;
+	simple_gpu_test_function();
+	std::cout << "Testing GPU done" << std::endl;
 
 	return 0;
 }
