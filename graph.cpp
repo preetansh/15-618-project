@@ -48,7 +48,14 @@ void Graph::ReadGraph(const char* fname) {
 
     // number of nodes is equal to row in the adjacency matrix
     nnode = row;
-    nedges = nnz;
+    nedges = nnz * 2; // Undirected edge, v1 -> v2, v2 -> v1
+
+
+    // initialization of the lists
+    offsets = (int *) malloc(sizeof(int) * (nnode + 2)); // 0th node and nnode + 1 node
+    // 0 for easy index and nnode + 1 for easy offsets
+
+    neighbours = (int *) malloc(sizeof(int) * (nedges)); // all edges 
 
     std::map<int, std::vector<int> > adj_lists;
 
@@ -77,22 +84,27 @@ void Graph::ReadGraph(const char* fname) {
 
     }
 
-    offsets.push_back(0);
+    offsets[0] = 0;
 
     int prev_offset = 0;
+    int neighbour_current = 0; // position at which adj_lists[i] needs to be inserted
+
     for (int i = 1; i <= nnode; i++) {
     	if (adj_lists.count(i) == 0) {
-    		offsets.push_back(prev_offset);
+    		offsets[i] = prev_offset;
     	}
     	else {
-    		offsets.push_back(prev_offset);
+    		offsets[i] = prev_offset;
     		prev_offset += adj_lists[i].size();
-    		neighbours.insert(neighbours.end(), adj_lists[i].begin(), adj_lists[i].end());
-    	}
-    	if (i % 10000 == 0) {
-    		std::cout << i << std::endl;
+            std::copy(adj_lists[i].begin(), adj_lists[i].end(), &neighbours[neighbour_current]);
+    		neighbour_current += adj_lists[i].size();
     	}
     }
 
-    offsets.push_back(prev_offset);
+    offsets[nnode + 1] = prev_offset;
+}
+
+void Graph::FreeGraph() {
+    free(offsets);
+    free(neighbours);
 }

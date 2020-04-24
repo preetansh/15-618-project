@@ -8,21 +8,20 @@
 
 int d = 0;
 int f = 0;
-std::map<int, int> visited;
 
-void dfs(Graph& g, int root, std::vector<std::vector<int> >& results) {
-	visited[root] = 1;
+void dfs(Graph* g, int root, int** results) {
 	results[0][root] = d;
 	d++;
 
-	std::vector<int> offsets = g.GetOffsets();
+	int* offsets = g->GetOffsets();
+	int* neighbours = g->GetNeighbours();
 	int offset = offsets[root];
-	int num_neighbors = offsets[root+1] - offset;
+	int num_neighbours = offsets[root+1] - offset;
 	
-	for (int i = 0; i < num_neighbors; i++) {
-		int child = g.GetNeighbours()[offset + i];
+	for (int i = 0; i < num_neighbours; i++) {
+		int child = neighbours[offset + i];
 
-		if (visited.count(child) == 0) {
+		if (results[0][child] == -1) { // not set in pre-order means not visited
 			results[1][child] = root;
 			dfs(g, child, results);
 		}
@@ -32,17 +31,24 @@ void dfs(Graph& g, int root, std::vector<std::vector<int> >& results) {
 } 
 
 int main() {
-	Graph g;
-	g.ReadGraph("sample.mtx");
-	int nnodes = g.GetNodes();
+	Graph* g = new Graph();
+	g->ReadGraph("sample.mtx");
+	int nnodes = g->GetNodes();
 
-	std::vector<std::vector<int> > results;
-	std::vector<int> pre_order(nnodes+1, -1);
-	std::vector<int> parent(nnodes+1, -1);
-	std::vector<int> post_order(nnodes+1, -1);
-	results.push_back(pre_order);
-	results.push_back(parent);
-	results.push_back(post_order);
+	int** results = (int **) malloc(sizeof(int *) * 3);
+	int* pre_order = (int *) calloc((nnodes + 1), sizeof(int)); // calloc assures 0 at each position
+	int* parent = (int *) calloc((nnodes + 1), sizeof(int));
+	int* post_order = (int *) calloc((nnodes + 1), sizeof(int));
+
+	results[0] = pre_order;
+	results[1] = parent;
+	results[2] = post_order;
+
+	for (int i = 0; i < (nnodes + 1); i++) {
+		pre_order[i] = -1;
+		parent[i] = -1;
+		post_order[i] = -1;
+	}
 
 	dfs(g, 1, results);
 
@@ -52,4 +58,11 @@ int main() {
 		}
 		std::cout << "\n";
 	} 
+
+	free(pre_order);
+	free(parent);
+	free(post_order);
+	free(results);
+	g->FreeGraph();
+	delete(g);
 }

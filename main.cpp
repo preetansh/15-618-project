@@ -13,8 +13,8 @@ int main() {
 	std::cout << g->GetNodes() << "\n";
 	std::cout << g->GetEdges() << "\n";
 
-	std::vector<int> neighbours = g->GetNeighbours();
-	std::vector<int> offsets = g->GetOffsets();
+	int* neighbours = g->GetNeighbours();
+	int* offsets = g->GetOffsets();
 
 	for (int i = 1; i <= g->GetNodes(); i++) {
     	std::cout << "Offset for node " << i << " is " << offsets[i] << "\n";
@@ -22,4 +22,6 @@ int main() {
     		std::cout << "Neighbour for node " << i << " is " << neighbours[offsets[i]+j] << "\n";
     	}
     }
+    g->FreeGraph();
+    delete(g);
 }
