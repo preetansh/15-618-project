@@ -6,7 +6,7 @@
 
 #include "CycleTimer.h"
 
-#define INF -1
+#define ZERO 0
 
 extern float toBW(int bytes, float sec);
 
@@ -17,7 +17,7 @@ setup_levels_kernel(int N, int* levels) {
   int index = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (index > 1 && index <= N) {
-    levels[index] = INF;
+    levels[index] = ZERO;
   }
 }
 
@@ -36,7 +36,7 @@ bfs_baseline_kernel(int N, int curr, int* levels, int* offsets,
         int offset = offsets[v];
         for(int i = 0; i < num_nbr; i++) {
           int w = neighbours[offset + i];
-          if (levels[w] == INF) {
+          if (levels[w] == ZERO) {
             *finished = false;
             levels[w] = curr + 1;
           }
@@ -61,6 +61,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     bool* finished;
     finished = (bool *) malloc(sizeof(bool));
     (*finished) = true;
+    levels[1] = 1;
 
     int* device_offsets;
     int* device_neighbours;
@@ -88,11 +89,11 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     // run kernel
     double startTime2 = CycleTimer::currentSeconds();
     // setup the levels array
-    setup_levels_kernel<<<blocks, threadsPerBlock>>>(nnodes, device_levels);
-    cudaDeviceSynchronize();
+    // setup_levels_kernel<<<blocks, threadsPerBlock>>>(nnodes, device_levels);
+    // cudaDeviceSynchronize();
 
     // // run bfs_baseline_kernel
-    int curr = 0;
+    int curr = 1;
     do {
       *finished = true;
       cudaMemcpy(device_finished, finished, 1 * sizeof(bool), cudaMemcpyHostToDevice);
@@ -118,7 +119,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
 
     double overallDuration = endTime - startTime;
     double overallDuration2 = endTime2 - startTime2;
-    printf("Running Time: %.3f ms\n", 1000.f * overallDuration2);
+    printf("Kernel Running Time: %.3f ms\n", 1000.f * overallDuration2);
     printf("Overall: %.3f ms\t\t[%.3f GB/s]\n", 1000.f * overallDuration, toBW(totalBytes, overallDuration));
 
     // free memory buffers on the GPU

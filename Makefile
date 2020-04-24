@@ -1,11 +1,11 @@
-<<<<<<< HEAD
+
 EXECUTABLE := bfs
 
 CU_FILES   := bfs_base.cu
 
 CU_DEPS    :=
 
-CC_FILES   := main.cpp graph.cpp 
+CC_FILES   := bfs.cpp graph.cpp 
 
 ###########################################################
 
@@ -19,7 +19,7 @@ NVCC=nvcc
 NVCCFLAGS=-O3 -m64 --gpu-architecture compute_61
 
 
-OBJS=$(OBJDIR)/main.o  $(OBJDIR)/graph.o $(OBJDIR)/bfs_base.o
+OBJS=$(OBJDIR)/bfs.o  $(OBJDIR)/graph.o $(OBJDIR)/bfs_base.o
 
 
 .PHONY: dirs clean
