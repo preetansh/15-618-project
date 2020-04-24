@@ -5,6 +5,8 @@
 #include "graph.h"
 #include "CycleTimer.h"
 
+void simple_gpu_test_function();
+
 void BFSSeq (Graph* g, int* visited) {
 	int nnodes = g->GetNodes();
 	std::queue<int> pending;
@@ -64,6 +66,11 @@ int main()
 		}
 		free(visited);
 	}
+
+	// test GPU 
+	std::cout << "Testing GPU" << std::endl;
+	simple_gpu_test_function();
+	std::cout << "Testing GPU done" << std::endl;
 
 	g->FreeGraph();
 	delete(g);
