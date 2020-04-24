@@ -58,10 +58,14 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     const int blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
     int nnodes = N;
     int nedges = M;
+    bool* finished;
+    finished = (bool *) malloc(sizeof(bool));
+    (*finished) = true;
 
     int* device_offsets;
     int* device_neighbours;
     int* device_levels;
+    bool* device_finished;
 
     //
     // allocate device memory buffers on the GPU using cudaMalloc
@@ -69,6 +73,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     cudaMalloc(&device_offsets, (nnodes+2) * sizeof(int));
     cudaMalloc(&device_neighbours, nedges * sizeof(int));
     cudaMalloc(&device_levels, (nnodes+1) * sizeof(int));
+    cudaMalloc(&device_finished, 1 * sizeof(bool));
 
 
     //
@@ -77,6 +82,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     cudaMemcpy(device_offsets, offsets, (nnodes+2) * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_neighbours, neighbours, nedges * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_levels, levels, (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_finished, finished, 1 * sizeof(bool), cudaMemcpyHostToDevice);
 
 
     // run kernel
@@ -87,13 +93,14 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
 
     // // run bfs_baseline_kernel
     int curr = 0;
-    bool finished = true;
     do {
-      finished = true;
+      *finished = true;
+      cudaMemcpy(device_finished, finished, 1 * sizeof(bool), cudaMemcpyHostToDevice);
       bfs_baseline_kernel<<<blocks, threadsPerBlock>>>(nnodes, curr++,
-        device_levels, device_offsets, device_neighbours, &finished);
+        device_levels, device_offsets, device_neighbours, device_finished);
       cudaDeviceSynchronize();
-    } while(!finished);
+      cudaMemcpy(finished, device_finished, 1 * sizeof(bool), cudaMemcpyDeviceToHost);
+    } while(!(*finished));
     double endTime2 = CycleTimer::currentSeconds();
 
     //
