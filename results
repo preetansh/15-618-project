@@ -1,0 +1,82 @@
+Inital Results
+
+1. coPaper.mtx 
+
+Nodes : 540486 Edges : 30491458
+Min degree : 1 Max degree : 3299 Median degree : 34
+Mean degree : 56.4149 Stdev degree : 66.2361
+
+
+Locally:
+Read completed in 35.5193
+BFS completed in 0.136126
+
+Read completed in 34.9794
+BFS completed in 0.135881
+
+Read completed in 35.9498
+BFS completed in 0.146219
+
+Read completed in 34.2421
+BFS completed in 0.13568
+
+2. road_usa.mtx 23947347 nodes and 57708624 edges
+Nodes : 23947347 Edges : 57708624
+Min degree : 1 Max degree : 9 Median degree : 2
+Mean degree : 2.40981 Stdev degree : 0.92899
+
+Read completed in 198.294
+BFS completed in 4.47605
+BFS completed in 4.45581
+
+10 iterations (Is it caching after the first ?????)
+BFS completed in 4.45581
+BFS completed in 2.36264
+BFS completed in 2.35275
+BFS completed in 2.36504
+BFS completed in 2.36604
+BFS completed in 2.40185
+BFS completed in 2.40392
+BFS completed in 2.3836
+BFS completed in 2.40273
+BFS completed in 2.84843
+
+3. hugebubbles-00020
+Nodes : 21198119 Edges : 63580358
+Min degree : 2 Max degree : 3 Median degree : 3
+Mean degree : 2.99934 Stdev degree : 0.0256895
+
+4. ca2010
+Nodes : 710145 Edges : 3489366
+Min degree : 0 Max degree : 980 Median degree : 4
+Mean degree : 4.90977 Stdev degree : 8.65894
+
+5. il2010
+Nodes : 451554 Edges : 2164464
+Min degree : 0 Max degree : 1964 Median degree : 4
+Mean degree : 4.79144 Stdev degree : 11.5827
+
+6. auto
+Nodes : 448695 Edges : 6629222
+Min degree : 4 Max degree : 37 Median degree : 15
+Mean degree : 14.7745 Stdev degree : 2.71361
+
+7. delauney_n24
+Nodes : 16777216 Edges : 100663202
+Min degree : 3 Max degree : 26 Median degree : 6
+Mean degree : 5.99999 Stdev degree : 1.33578
+
+8. europe_osm
+Nodes : 50912018 Edges : 108109320
+Min degree : 1 Max degree : 13 Median degree : 2
+Mean degree : 2.12345 Stdev degree : 0.479637
+
+9. 333SP
+Nodes : 3712815 Edges : 22217266
+Min degree : 2 Max degree : 28 Median degree : 6
+Mean degree : 5.98394 Stdev degree : 0.702961
+
+10. venturiLevel3
+Nodes : 4026819 Edges : 16108474
+Min degree : 2 Max degree : 6 Median degree : 4
+Mean degree : 4.0003 Stdev degree : 0.118263
