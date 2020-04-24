@@ -26,12 +26,9 @@ int main() {
 
 	int* neighbours = g->GetNeighbours();
 	int* offsets = g->GetOffsets();
-<<<<<<< HEAD
 	int n = g->GetNodes();
 	int m = g->GetEdges();
 	int* levels = (int *) calloc((n + 1), sizeof(int));
-=======
->>>>>>> ee56094faf41e44699d5da01bbb27fe7a186b52d
 
 	// check the state of the gpu
 	printCudaInfo();
@@ -42,12 +39,10 @@ int main() {
     for (int i = 1; i <= n; i+=1000) {
     	std::cout << "Level for node " << i << " : " << levels[i] << "\n";
     }
-<<<<<<< HEAD
 
 	
 	free(levels);
-=======
->>>>>>> ee56094faf41e44699d5da01bbb27fe7a186b52d
+
     g->FreeGraph();
     delete(g);
 }
