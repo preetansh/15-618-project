@@ -22,7 +22,7 @@ class Graph {
 		return nedges;
 	}
 
-	void ReadGraph(const char* fname, bool isWeighted);
+	void ReadGraph(const char* fname, bool isWeighted, bool keepDirection);
 
 	void FreeGraph();
 

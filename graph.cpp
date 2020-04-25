@@ -19,7 +19,7 @@ bool is_comment(char *s) {
     return false;
 }
 
-void Graph::ReadGraph(const char* fname, bool isWeighted) {
+void Graph::ReadGraph(const char* fname, bool isWeighted, bool keepDirection) {
 
 	FILE *fp;
 	char linebuf[MAXLINE];
@@ -48,7 +48,12 @@ void Graph::ReadGraph(const char* fname, bool isWeighted) {
 
     // number of nodes is equal to row in the adjacency matrix
     nnode = row;
-    nedges = nnz * 2; // Undirected edge, v1 -> v2, v2 -> v1
+    if (keepDirection) {
+        nedges = nnz; // Only one direction
+    }
+    else {
+        nedges = nnz * 2; // Undirected edge, v1 -> v2, v2 -> v1
+    }
 
 
     // initialization of the lists
@@ -69,14 +74,16 @@ void Graph::ReadGraph(const char* fname, bool isWeighted) {
             fscanf(fp, "%d %d %d\n", &edge_from, &edge_to, &weight);
         }
 
-    	if (adj_lists.count(edge_from) == 0) {
-    		std::vector<int> from_list;
-    		from_list.push_back(edge_to);
-    		adj_lists[edge_from] = from_list;
-    	}
-    	else {
-    		adj_lists[edge_from].push_back(edge_to);
-    	}
+        if (!(keepDirection)) {
+            if (adj_lists.count(edge_from) == 0) {
+                std::vector<int> from_list;
+                from_list.push_back(edge_to);
+                adj_lists[edge_from] = from_list;
+            }
+            else {
+                adj_lists[edge_from].push_back(edge_to);
+            }
+        }
 
     	if (adj_lists.count(edge_to) == 0) {
     		std::vector<int> to_list;

@@ -54,7 +54,7 @@ int main()
 	std::cout << "Reading " << filename << "\n";
 
 	double startTime = CycleTimer::currentSeconds();
-	g->ReadGraph(filename, true);
+	g->ReadGraph(filename, true, false);
 	double endTime = CycleTimer::currentSeconds();
 
 	std::cout << "Graph Read. Found " << g->GetNodes() << " nodes and " << g->GetEdges() << " edges" << std::endl;

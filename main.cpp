@@ -20,7 +20,7 @@ int main() {
 	Graph* g = new Graph();
 
 	// read and initialize the graph, not a timed operation
-	g->ReadGraph("sample.mtx");
+	g->ReadGraph("sample.mtx", false);
 	std::cout << g->GetNodes() << "\n";
 	std::cout << g->GetEdges() << "\n";
 
