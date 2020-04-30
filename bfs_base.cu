@@ -23,7 +23,7 @@ setup_levels_kernel(int N, int* levels) {
 
 __global__ void
 bfs_baseline_kernel(int N, int curr, int* levels, int* offsets,
-   int* neighbours, bool* finished ) {
+   int* neighbours, int* finished ) {
 
     // compute overall index from position of thread in current block,
     // and given the block we are in
@@ -37,7 +37,9 @@ bfs_baseline_kernel(int N, int curr, int* levels, int* offsets,
         for(int i = 0; i < num_nbr; i++) {
           int w = neighbours[offset + i];
           if (levels[w] == ZERO) {
-            *finished = false;
+            // use atomic CAS to set finished to 0
+            atomicCAS(finished, 1, 0);
+            
             levels[w] = curr + 1;
           }
         }
@@ -58,15 +60,15 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     const int blocks = (N + threadsPerBlock - 1) / threadsPerBlock;
     int nnodes = N;
     int nedges = M;
-    bool* finished;
-    finished = (bool *) malloc(sizeof(bool));
-    (*finished) = true;
+    int* finished;
+    finished = (int *) malloc(sizeof(int));
+    (*finished) = 1;
     levels[1] = 1;
 
     int* device_offsets;
     int* device_neighbours;
     int* device_levels;
-    bool* device_finished;
+    int* device_finished;
 
     //
     // allocate device memory buffers on the GPU using cudaMalloc
@@ -74,7 +76,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     cudaMalloc(&device_offsets, (nnodes+2) * sizeof(int));
     cudaMalloc(&device_neighbours, nedges * sizeof(int));
     cudaMalloc(&device_levels, (nnodes+1) * sizeof(int));
-    cudaMalloc(&device_finished, 1 * sizeof(bool));
+    cudaMalloc(&device_finished, 1 * sizeof(int));
 
 
     //
@@ -83,7 +85,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     cudaMemcpy(device_offsets, offsets, (nnodes+2) * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_neighbours, neighbours, nedges * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_levels, levels, (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(device_finished, finished, 1 * sizeof(bool), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_finished, finished, 1 * sizeof(int), cudaMemcpyHostToDevice);
 
 
     // run kernel
@@ -95,13 +97,13 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     // // run bfs_baseline_kernel
     int curr = 1;
     do {
-      *finished = true;
-      cudaMemcpy(device_finished, finished, 1 * sizeof(bool), cudaMemcpyHostToDevice);
+      *finished = 1;
+      cudaMemcpy(device_finished, finished, 1 * sizeof(int), cudaMemcpyHostToDevice);
       bfs_baseline_kernel<<<blocks, threadsPerBlock>>>(nnodes, curr++,
         device_levels, device_offsets, device_neighbours, device_finished);
       cudaDeviceSynchronize();
-      cudaMemcpy(finished, device_finished, 1 * sizeof(bool), cudaMemcpyDeviceToHost);
-    } while(!(*finished));
+      cudaMemcpy(finished, device_finished, 1 * sizeof(int), cudaMemcpyDeviceToHost);
+    } while(!((*finished) == 1));
     double endTime2 = CycleTimer::currentSeconds();
 
     //
