@@ -11,7 +11,7 @@
 int d = 0;
 int f = 0;
 
-void dfs(Graph* g, int root, int** results) {
+void recursive_dfs(Graph* g, int root, int** results) {
 	results[0][root] = d;
 	d++;
 
@@ -25,7 +25,7 @@ void dfs(Graph* g, int root, int** results) {
 
 		if (results[0][child] == -1) { // not set in pre-order means not visited
 			results[1][child] = root;
-			dfs(g, child, results);
+			recursive_dfs(g, child, results);
 		}
 	}
 	results[2][root] = f; 
@@ -65,6 +65,14 @@ void iterative_dfs(Graph *g, int root, int** results) {
 	}
 }
 
+void dfs(Graph *g, int** results) {
+	for (int i = 1; i <= g->GetNodes(); i++) {
+		if (results[2][i] == -1) {
+			iterative_dfs(g, i, results);
+		} 
+	}
+}
+
 int main() {
 	Graph* g = new Graph();
 	g->ReadGraph("data/coPaper.mtx", false, true);
@@ -99,7 +107,7 @@ int main() {
 	results[2] = post_order;
 
 
-	iterative_dfs(g, 1, results);
+	dfs(g, results);
 
 	double endTime = CycleTimer::currentSeconds();
 
@@ -108,9 +116,9 @@ int main() {
 	// print results
 	// for (int i = 0; i < 3; i++) {
 	// 	for (int j = 1; j <= nnodes; j++) {
-	// 			std::cout << results[i][j] << " ";
+	// 			std::cout << j << " - " << results[i][j] << "\n";
 	// 	}
-	// 	std::cout << "\n";
+	// 	std::cout << "Changing of result" << "\n";
 	// } 
 
 	free(pre_order);
