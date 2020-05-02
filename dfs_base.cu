@@ -22,7 +22,7 @@ zero_edge_weights(int M, int* edge_weights) {
 }
 
 __global__ void
-setup_zeta_leaves(int N, int* zeta, bool* leaves, bool* q_queue) {
+setup_zeta_leaves(int N, int* zeta, bool* leaves, bool* q_queue, int* child_counter) {
   // compute overall index from position of thread in current block,
   // and given the block we are in
   int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -32,12 +32,13 @@ setup_zeta_leaves(int N, int* zeta, bool* leaves, bool* q_queue) {
         zeta[index] = 1;
         q_queue[index] = true;
     }
+    child_counter[index] = 0;
   }
 }
 
 __global__ void
-calculate_edge_weights(int N, int* zeta, int* edge_weights, bool* q_queue, bool* c_queue, 
-    int* offsets, int* neighbours, int* p_offsets, int* parents, int* child_to_parent) {
+propagate_zeta(int N, int* zeta, int* edge_weights, bool* q_queue, bool* c_queue, int* offsets, 
+    int* neighbours, int* p_offsets, int* parents, int* child_to_parent) {
 
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -45,32 +46,54 @@ calculate_edge_weights(int N, int* zeta, int* edge_weights, bool* q_queue, bool*
         if (q_queue[index]) {
             int child_offset = p_offsets[index];
             int num_parents = p_offsets[index + 1] - child_offset;
+            // TODO : Parallelizing this for loop might help
             for (int i = 0; i < num_parents; i++) {
-                int index = child_to_parent[child_offset + i];
-                edge_weights[index] = zeta[index];
+                int j = child_to_parent[child_offset + i];
+                edge_weights[j] = zeta[index];
             }
         }
-        else if (zeta[index] == 0) {
-            bool flag = true;
-            int n_offset = offsets[index];
-            int n_children = offsets[index + 1] - n_offset;
+    }
+}
+
+__global__ void
+calculate_parent_zeta(int N, int* zeta, int* edge_weights, bool* q_queue, bool* c_queue, int* offsets, 
+    int* neighbours, int* p_offsets, int* parents, int* child_to_parent) {
+
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (index <= N && zeta[index] == 0) {
+        int n_offset = offsets[index];
+        int n_children = offsets[index + 1] - n_offset;
+
+        bool flag = true;
+
+        for (int i = 0; i < n_children; i++) {
+            if (edge_weights[n_offset + i] == 0) {
+                flag = false;
+                break;
+            }
+        }
+
+        if(flag) {
+            int prefix_sum = 1;
             for (int i = 0; i < n_children; i++) {
-                if (edge_weights[n_offset + i] == 0) {
-                    flag = false;
-                    break;
-                }
+                int temp = edge_weights[n_offset + i];
+                edge_weights[n_offset + i] = prefix_sum;
+                prefix_sum += temp;
             }
-            if (flag) {
-                int prefix_sum = 1;
-                for (int i = 0; i < n_children; i++) {
-                    int temp = edge_weights[n_offset + i];
-                    edge_weights[n_offset + i] = prefix_sum;
-                    prefix_sum += temp;
-                }
-                zeta[index] = prefix_sum;
-                c_queue[index] = true;
-            }
+            zeta[index] = prefix_sum;
+            c_queue[index] = true;
         }
+    }
+}
+
+__global__ void
+exchange_c_q(int N, bool* q_queue, bool* c_queue) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (index <= N) {
+        q_queue[index] = c_queue[index];
+        c_queue[index] = 0;
     }
 }
 
@@ -100,6 +123,7 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     int* device_child_to_parent;
 
     int* device_edge_weights;
+    int* child_counter;
     bool* c_queue;
     bool* q_queue;
     //
@@ -117,6 +141,7 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     cudaMalloc(&device_edge_weights, nedges * sizeof(int));
     cudaMalloc(&c_queue, (nnodes + 1) * sizeof(bool));
     cudaMalloc(&q_queue, (nnodes + 1) * sizeof(bool));
+    cudaMalloc(&child_counter, (nnodes + 1)*sizeof(int));
 
     cudaMemset(c_queue, false, (nnodes + 1) * sizeof(bool));
     cudaMemset(q_queue, false, (nnodes + 1) * sizeof(bool));
@@ -144,12 +169,31 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     // setup the zeta's for leaves and initialize q with the leaves
     zero_edge_weights<<<blocks_edges, threadsPerBlock>>>(nedges, device_edge_weights);
     cudaDeviceSynchronize();
-    setup_zeta_leaves<<<blocks, threadsPerBlock>>>(nnodes, device_zeta, device_leaves, q_queue);
+    setup_zeta_leaves<<<blocks, threadsPerBlock>>>(nnodes, device_zeta, device_leaves, q_queue, child_counter);
     cudaDeviceSynchronize();
+    int* edge_weights = (int *) malloc(sizeof(int) * (nedges));
 
     // calculate edge weights
-    calculate_edge_weights<<<blocks, threadsPerBlock>>>(nnodes, device_zeta, device_edge_weights, q_queue, 
-        c_queue, device_offsets, device_neighbours, device_p_offsets, device_parents, device_child_to_parent);
+    while(true) {
+        int zeta_of_zero = 0;
+
+        propagate_zeta<<<blocks, threadsPerBlock>>>(nnodes, device_zeta, device_edge_weights, q_queue, 
+            c_queue, device_offsets, device_neighbours, device_p_offsets, device_parents, device_child_to_parent);
+        cudaDeviceSynchronize();
+
+        calculate_parent_zeta<<<blocks, threadsPerBlock>>>(nnodes, device_zeta, device_edge_weights, q_queue, 
+            c_queue, device_offsets, device_neighbours, device_p_offsets, device_parents, device_child_to_parent);
+        cudaDeviceSynchronize();
+
+        exchange_c_q<<<blocks, threadsPerBlock>>>(nnodes, q_queue, c_queue);
+        cudaDeviceSynchronize();
+
+        cudaMemcpy(&zeta_of_zero, device_zeta, 1 * sizeof(int), cudaMemcpyDeviceToHost);
+        if (zeta_of_zero) {
+            break;
+        }
+    }
+
     cudaDeviceSynchronize();
 
     double endTime2 = CycleTimer::currentSeconds();
@@ -158,6 +202,16 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     // copy result from GPU using cudaMemcpy
     //
     cudaMemcpy(zeta, device_zeta, (nnodes+1) * sizeof(int), cudaMemcpyDeviceToHost);
+
+    cudaMemcpy(edge_weights, device_edge_weights, nedges * sizeof(int), cudaMemcpyDeviceToHost);
+    for (int i = 0; i<=nnodes; i++) {
+        int offset = offsets[i];
+        for (int j = 0; j < (offsets[i+1] - offsets[i]); j++) {
+            int child = neighbours[offset + j];
+            std::cout << i << " - " << child << " and edge weight " << edge_weights[offset + j] << "\n";
+        }
+    }
+    free(edge_weights);
 
     // end timing after result has been copied back into host memory
     double endTime = CycleTimer::currentSeconds();
@@ -183,6 +237,7 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     cudaFree(device_child_to_parent);
 
     cudaFree(device_edge_weights);
+    cudaFree(child_counter);
     cudaFree(c_queue);
     cudaFree(q_queue);
 }

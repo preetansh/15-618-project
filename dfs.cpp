@@ -181,7 +181,7 @@ int main() {
 	int nnodes = g->GetNodes();
 
 	std::cout << "Read Graph for DFS" << "\n";
-	printGraphInfo(g); // uncomment to print the info of graph
+	// printGraphInfo(g); // uncomment to print the info of graph
 
 	double startTime = CycleTimer::currentSeconds();
 
