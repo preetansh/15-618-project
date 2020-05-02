@@ -8,7 +8,8 @@
 #include <stack>
 #include "CycleTimer.h"
 
-void DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, int* parents, int** results, int* zeta);
+void DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, int* parents, 
+	int* child_to_parent, int** results, int* zeta);
 void printCudaInfo();
 
 // return GB/s
@@ -23,6 +24,7 @@ void printGraphInfo(Graph* g) {
 	std::cout << "Printing Graph Info" << "\n";
 
 	int nnodes = g->GetNodes();
+	int nedges = g->GetEdges();
 
 	int* offsets = g->GetOffsets();
 	int* neighbours = g->GetNeighbours();
@@ -33,14 +35,15 @@ void printGraphInfo(Graph* g) {
 			std::cout << i << " - " << child << "\n";
 		}
 	}
-	std::cout << "Next : Parents" << "\n";
+	std::cout << "Next : Parents and child to parent index" << "\n";
 	int* p_offsets = g->GetParentOffsets();
 	int* p_parents = g->GetParents();
+	int* c_p = g->GetChildToParentIndex();
 	for (int i = 0; i<=nnodes; i++) {
 		int offset = p_offsets[i];
 		for (int j = 0; j < (p_offsets[i+1] - p_offsets[i]); j++) {
 			int child = p_parents[offset + j];
-			std::cout << i << " - " << child << "\n";
+			std::cout << i << " - " << child << " , " << c_p[offset + j] << "\n";
 		}
 	}
 
@@ -55,6 +58,7 @@ void printGraphInfo(Graph* g) {
 	for (int i = 0; i <= nnodes; i++) {
 		std::cout << i << " - " << l[i] << "\n";
 	}
+
 }
 
 void recursive_dfs(Graph* g, int root, int** results) {
@@ -158,7 +162,7 @@ void runDfsGpu(Graph* g) {
 
 	// run the main cuda program (timing starts inside)
     DfsCuda(nnodes, g->GetEdges(), g->GetOffsets(), g->GetNeighbours(), g->GetLeaves(), g->GetParentOffsets(),
-     g->GetParents(), cuda_results, zeta);
+     g->GetParents(), g->GetChildToParentIndex(), cuda_results, zeta);
 
     std::cout << "Zeta" << "\n";
 	for(int i = 0; i <= nnodes; i++) {
@@ -178,7 +182,7 @@ int main() {
 	int nnodes = g->GetNodes();
 
 	std::cout << "Read Graph for DFS" << "\n";
-	// printGraphInfo(g); // uncomment to print the info of graph
+	printGraphInfo(g); // uncomment to print the info of graph
 
 	double startTime = CycleTimer::currentSeconds();
 

@@ -116,6 +116,16 @@ void Graph::ReadGraph(const char* fname, bool isWeighted, bool keepDirection) {
     offsets[nnode + 1] = prev_offset;
 }
 
+int Graph::indexOfChild(int child, int parent) {
+    int o = offsets[parent];
+    int num_children = offsets[parent + 1] - offsets[parent];
+    for (int i = 0; i < num_children; i++) {
+        if (neighbours[o + i] == child) {
+            return (o + i); 
+        }
+    }
+    return -1;
+}
 
 // A function to read the graph for DFS
 void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
@@ -256,6 +266,18 @@ void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
 
     offsets[nnode + 1] = prev_offset;
     parent_offsets[nnode + 1] = p_offset;
+
+    // find the offsets of children in the parent adjacency list
+    // parent_offsets, parents
+    child_to_parent_index = (int *) malloc(sizeof(int) * (nedges));
+    for (int i = 0; i <= nnode; i++) {
+        int i_p_offset = parent_offsets[i];
+        int num_parents = parent_offsets[i+1] - parent_offsets[i];
+        for (int j = 0; j < num_parents; j++) {
+            int i_p = parents[i_p_offset + j];
+            child_to_parent_index[i_p_offset + j] = indexOfChild(i, i_p);
+        }
+    }
 }
 
 
@@ -265,4 +287,5 @@ void Graph::FreeGraph() {
     free(parents);
     free(roots);
     free(leaves);
+    free(child_to_parent_index);
 } 

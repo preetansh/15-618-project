@@ -38,7 +38,13 @@ class Graph {
 		return roots;
 	}
 
+	int* GetChildToParentIndex() {
+		return child_to_parent_index;
+	}
+
 	void ReadGraph(const char* fname, bool isWeighted, bool keepDirection);
+
+	int indexOfChild(int child, int parent);
 
 	void ReadDFSGraph(const char* fname, bool isWeighted);
 
@@ -55,4 +61,5 @@ class Graph {
 	int *parents; // essentially reversing the neighbours, size : nedges
 	bool *leaves; // leaves[i] = 1, i is a leaf, size : nnode + 1
 	bool *roots; // roots[i] = 1, i is a root. Although the grand root will be zero, size : nnode + 1
+	int* child_to_parent_index; // size : nedges + nroots, to store the position of a child in the adjacency list of parent  
 };
