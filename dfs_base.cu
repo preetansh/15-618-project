@@ -78,7 +78,7 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     cudaMalloc(&device_p_offsets, (nnodes + 2) * sizeof(int));
     cudaMalloc(&device_parents, nedges * sizeof(int));
     cudaMalloc(&device_results, 3 * (nnodes + 1) * sizeof(int));
-    cudaMalloc(&device_zeta, (nnodes + 1), sizeof(int));
+    cudaMalloc(&device_zeta, (nnodes + 1) * sizeof(int));
 
 
     //
@@ -87,10 +87,10 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     cudaMemcpy(device_offsets, offsets, (nnodes+2) * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_neighbours, neighbours, nedges * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_leaves, leaves, (nnodes + 1) * sizeof(bool), cudaMemcpyHostToDevice);
-    cudaMemcpy(device_p_offsets, (nnodes + 2) * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(device_parents, nedges * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(device_results, 3 * (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(device_zeta, (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_p_offsets, p_offsets, (nnodes + 2) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_parents, parents, nedges * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_results, results, 3 * (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_zeta, zeta, (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
 
 
     // run kernel
