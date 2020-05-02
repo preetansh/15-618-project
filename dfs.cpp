@@ -24,7 +24,6 @@ void printGraphInfo(Graph* g) {
 	std::cout << "Printing Graph Info" << "\n";
 
 	int nnodes = g->GetNodes();
-	int nedges = g->GetEdges();
 
 	int* offsets = g->GetOffsets();
 	int* neighbours = g->GetNeighbours();

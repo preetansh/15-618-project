@@ -97,7 +97,7 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     int* device_parents;
     int** device_results;
     int* device_zeta;
-    int* device_child_to_parent
+    int* device_child_to_parent;
 
     int* device_edge_weights;
     bool* c_queue;
