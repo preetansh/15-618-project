@@ -216,6 +216,7 @@ void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
     neighbours = (int *) malloc(sizeof(int) * (nedges + nroots)); // all edges 
     parents = (int *) malloc(sizeof(int) * (nedges + nroots)); // all back - edges
 
+    nedges += nroots; // insertion of new edges (0 -> roots)
 
     offsets[0] = 0;
     parent_offsets[0] = 0;

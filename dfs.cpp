@@ -8,6 +8,14 @@
 #include <stack>
 #include "CycleTimer.h"
 
+void DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, int* parents, int** results, int* zeta);
+void printCudaInfo();
+
+// return GB/s
+float toBW(int bytes, float sec) {
+  return static_cast<float>(bytes) / (1024. * 1024. * 1024.) / sec;
+}
+
 int d = 0;
 int f = 0;
 
@@ -125,6 +133,45 @@ void printDFSResults(int** results, int nnodes) {
 	}
 }
 
+void runDfsGpu(Graph* g) {
+
+	int nnodes = g->GetNodes();
+
+	// check the state of the gpu
+	printCudaInfo();
+
+	int** cuda_results = (int **) malloc(sizeof(int *) * 3);
+	int* cuda_pre_order = (int *) calloc((nnodes + 1), sizeof(int)); // calloc assures 0 at each position
+	int* cuda_parent = (int *) calloc((nnodes + 1), sizeof(int));
+	int* cuda_post_order = (int *) calloc((nnodes + 1), sizeof(int));
+	int* zeta = (int *) calloc((nnodes + 1), sizeof(int));
+
+	for (int i = 0; i < (nnodes + 1); i++) {
+		cuda_pre_order[i] = -1;
+		cuda_parent[i] = -1;
+		cuda_post_order[i] = -1;
+	}
+
+	cuda_results[0] = cuda_pre_order;
+	cuda_results[1] = cuda_parent;
+	cuda_results[2] = cuda_post_order;
+
+	// run the main cuda program (timing starts inside)
+    DfsCuda(nnodes, g->GetEdges(), g->GetOffsets(), g->GetNeighbours(), g->GetLeaves(), g->GetParentOffsets(),
+     g->GetParents(), cuda_results, zeta);
+
+    std::cout << "Zeta" << "\n";
+	for(int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << zeta[i] << "\n";
+	}
+
+    free(cuda_pre_order);
+    free(cuda_parent);
+    free(cuda_post_order);
+    free(cuda_results);
+    free(zeta);
+}
+
 int main() {
 	Graph* g = new Graph();
 	g->ReadDFSGraph("data/sample2.mtx", false);
@@ -159,6 +206,10 @@ int main() {
 	std::cout << "Time taken for dfs is " << (endTime - startTime) << "\n";
 
 	// printDFSResults(results, nnodes); // uncomment to print the dfs results
+
+ 	// Now run GPU
+	runDfsGpu(g);
+
 
 	free(pre_order);
 	free(parent);
