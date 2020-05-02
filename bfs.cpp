@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <queue>
+#include <map>
 
 #include "graph.h"
 #include "CycleTimer.h"
@@ -101,6 +102,20 @@ int main()
 	} 
 
 	std::cout << "Correctness : " << correct << "\n";
+
+	// Create a map to analyze output levels
+	// std::map<int, int> levelCounts; 
+	// for (int i=0; i<=n; i++) {
+	// 	if (levelCounts.count(visited[i]) == 0) {
+	// 		levelCounts[visited[i]] = 0;
+	// 	}
+
+	// 	levelCounts[visited[i]]++;
+	// }
+
+	// for (std::map<int,int>::iterator it=levelCounts.begin(); it!=levelCounts.end(); it++) {
+	// 	std::cout << "# of Nodes with level " << it->first << ": " << it->second << std::endl;
+	// }
 	
 
 	free(visited);
