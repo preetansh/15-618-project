@@ -5,7 +5,7 @@ CU_FILES   := bfs_base.cu
 
 CU_DEPS    :=
 
-CC_FILES   := bfs.cpp graph.cpp 
+CC_FILES   := bfs.cpp graph.cpp
 
 ###########################################################
 
