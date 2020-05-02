@@ -11,6 +11,44 @@
 int d = 0;
 int f = 0;
 
+void printGraphInfo(Graph* g) {
+	std::cout << "Printing Graph Info" << "\n";
+
+	int nnodes = g->GetNodes();
+
+	int* offsets = g->GetOffsets();
+	int* neighbours = g->GetNeighbours();
+	for (int i = 0; i<=nnodes; i++) {
+		int offset = offsets[i];
+		for (int j = 0; j < (offsets[i+1] - offsets[i]); j++) {
+			int child = neighbours[offset + j];
+			std::cout << i << " - " << child << "\n";
+		}
+	}
+	std::cout << "Next : Parents" << "\n";
+	int* p_offsets = g->GetParentOffsets();
+	int* p_parents = g->GetParents();
+	for (int i = 0; i<=nnodes; i++) {
+		int offset = p_offsets[i];
+		for (int j = 0; j < (p_offsets[i+1] - p_offsets[i]); j++) {
+			int child = p_parents[offset + j];
+			std::cout << i << " - " << child << "\n";
+		}
+	}
+
+	std::cout << "Next : Roots" << "\n";
+	bool* r = g->GetRoots();
+	for (int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << r[i] << "\n";
+	}
+
+	std::cout << "Next : Leaves" << "\n";
+	bool* l = g->GetLeaves();
+	for (int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << l[i] << "\n";
+	}
+}
+
 void recursive_dfs(Graph* g, int root, int** results) {
 	results[0][root] = d;
 	d++;
@@ -66,28 +104,34 @@ void iterative_dfs(Graph *g, int root, int** results) {
 }
 
 void dfs(Graph *g, int** results) {
-	for (int i = 1; i <= g->GetNodes(); i++) {
-		if (results[2][i] == -1) {
-			iterative_dfs(g, i, results);
-		} 
+	iterative_dfs(g, 0, results);
+}
+
+void printDFSResults(int** results, int nnodes) {
+	std::cout << "Printing DFS Results" << "\n";
+	std::cout << "Discovery time" << "\n";
+	for(int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << results[0][i] << "\n";
+	}
+
+	std::cout << "Parents" << "\n";
+	for(int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << results[1][i] << "\n";
+	}
+
+	std::cout << "Finish time" << "\n";
+	for(int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << results[2][i] << "\n";
 	}
 }
 
 int main() {
 	Graph* g = new Graph();
-	g->ReadGraph("data/coPaper.mtx", false, true);
-	std::cout << "Read the graph" << "\n";
-
+	g->ReadDFSGraph("data/sample2.mtx", false);
 	int nnodes = g->GetNodes();
 
-	int* offsets = g->GetOffsets();
-	int* neighbours = g->GetNeighbours();
-	for (int i = 1; i<=nnodes; i++) {
-		int offset = offsets[i];
-		for (int j = 0; j < (offsets[i+1] - offsets[i]); j++) {
-			int child = neighbours[offset + j];
-		}
-	}
+	std::cout << "Read Graph for DFS" << "\n";
+	// printGraphInfo(g); // uncomment to print the info of graph
 
 	double startTime = CycleTimer::currentSeconds();
 
@@ -113,13 +157,8 @@ int main() {
 
 
 	std::cout << "Time taken for dfs is " << (endTime - startTime) << "\n";
-	// print results
-	// for (int i = 0; i < 3; i++) {
-	// 	for (int j = 1; j <= nnodes; j++) {
-	// 			std::cout << j << " - " << results[i][j] << "\n";
-	// 	}
-	// 	std::cout << "Changing of result" << "\n";
-	// } 
+
+	// printDFSResults(results, nnodes); // uncomment to print the dfs results
 
 	free(pre_order);
 	free(parent);
