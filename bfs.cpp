@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <queue>
+#include <map>
 
 #include "graph.h"
 #include "CycleTimer.h"
@@ -46,11 +47,21 @@ void BFSSeq (Graph* g, int* visited) {
 	return;
 }
 
+/*
+ *
+ * File locations: 
+ * road_usa: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx"
+ * ca2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx"
+ * hugebubbles-00020: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx"
+ *
+ *
+ */
+
 int main()
 {
 	Graph* g = new Graph();
 
-	char* filename = "data/ca2010/ca2010.mtx";
+	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx";
 	std::cout << "Reading " << filename << "\n";
 
 	double startTime = CycleTimer::currentSeconds();
@@ -91,6 +102,20 @@ int main()
 	} 
 
 	std::cout << "Correctness : " << correct << "\n";
+
+	// Create a map to analyze output levels
+	// std::map<int, int> levelCounts; 
+	// for (int i=0; i<=n; i++) {
+	// 	if (levelCounts.count(visited[i]) == 0) {
+	// 		levelCounts[visited[i]] = 0;
+	// 	}
+
+	// 	levelCounts[visited[i]]++;
+	// }
+
+	// for (std::map<int,int>::iterator it=levelCounts.begin(); it!=levelCounts.end(); it++) {
+	// 	std::cout << "# of Nodes with level " << it->first << ": " << it->second << std::endl;
+	// }
 	
 
 	free(visited);
