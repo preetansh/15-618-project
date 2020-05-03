@@ -5,10 +5,13 @@
 
 #include "graph.h"
 #include "CycleTimer.h"
-#include "bfsUtils.h"
+// #include "bfsUtils.h"
 
-void BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels);
+#define UPDATE_THRESHOLD 10 // Min. number of level updates this BFS to be considered
+
+void BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels, int BFSType, int updateThreshold);
 void printCudaInfo();
+std::pair<int, int> updateGlobalVisited(int* visitedGlobal, int* visited, int n);
 
 // return GB/s
 float toBW(int bytes, float sec) {
@@ -55,15 +58,18 @@ void BFSSeq (Graph* g, int root, int* visited) {
  * ca2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx"
  * il2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/il2010/il2010.mtx"
  * hugebubbles-00020: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx"
- *
- *
+ * auto: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/auto/auto.mtx"
+ * 333SP: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/333SP/333SP.mtx"
+ * coPaper: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/coPapersDBLP/coPapersDBLP.mtx" 
+ * venturi: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/venturiLevel3/venturiLevel3.mtx"
+ * delaunay: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/delaunay_n24/delaunay_n24.mtx"
  */
 
 int main()
 {
 	Graph* g = new Graph();
 
-	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx";
+	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx";
 	std::cout << "Reading " << filename << "\n";
 
 	double startTime = CycleTimer::currentSeconds();
@@ -77,7 +83,6 @@ int main()
 	int* offsets = g->GetOffsets();
 	int n = g->GetNodes();
 	int m = g->GetEdges();
-	int* levels = (int *) calloc((n + 1), sizeof(int));
 	int* visitedGlobal = (int *)calloc(g->GetNodes()+1, sizeof(int));
 
 	int numBFSCalls = 0;
@@ -87,28 +92,36 @@ int main()
 		// Init the visited array for this BFS
 		int* visited = (int *)calloc(g->GetNodes()+1, sizeof(int));
 		visited[root] = 1;
-		numBFSCalls++;
 
 		// Start BFS with this root
 		startTime = CycleTimer::currentSeconds();
 		BFSSeq(g, root, visited);
 		endTime = CycleTimer::currentSeconds();
 
-		// Add to total time
-		timeForSeqBFS += (endTime - startTime);
-
 		// move visited to visitedGlobal and get next root
-		root = updateGlobalVisited(visitedGlobal, visited, n);
+		std::pair<int, int> update = updateGlobalVisited(visitedGlobal, visited, n);
+		if (update.second >= UPDATE_THRESHOLD) {
+			// Add to total time
+			timeForSeqBFS += (endTime - startTime);
+			numBFSCalls++;
+		}
+		root = update.first;
 
 		free(visited);
 	}
-	std::cout << "Sequential Single Thread BFS completed in " << (timeForSeqBFS / numBFSCalls) << std::endl;
+	std::cout << "Sequential Single Thread BFS completed in " << (timeForSeqBFS / numBFSCalls)  * 1000.f << " ms" << std::endl;
 
 	// check the state of the gpu
 	printCudaInfo();
 
-	// run the main cuda program (timing starts inside)
-    BfsCuda(n, m, offsets, neighbours, levels);
+	// run the baseline cuda program (timing starts inside)
+	int* levelsBase = (int *) calloc((n + 1), sizeof(int));
+    BfsCuda(n, m, offsets, neighbours, levelsBase, 0, UPDATE_THRESHOLD);
+    free(levelsBase);
+
+    // run the baseline cuda program (timing starts inside)
+	int* levels = (int *) calloc((n + 1), sizeof(int));
+    BfsCuda(n, m, offsets, neighbours, levels, 1, UPDATE_THRESHOLD);
 
 	// checking GPU output
 	bool correct = true;
@@ -134,10 +147,13 @@ int main()
 		levelCounts[visitedGlobal[i]]++;
 	}
 
+	int totl = -1;
 	for (std::map<int,int>::iterator it=levelCounts.begin(); it!=levelCounts.end(); it++) {
 		std::cout << "# of Nodes with level " << it->first << ": " << it->second << std::endl;
+		totl += it->second;
 	}
-	
+	std::cout << "Total nodes " << n << ", accounted " << totl << std::endl;
+	std::cout << "Total BFSs considered " << numBFSCalls << std::endl;
 
 	free(visitedGlobal);
 	free(levels);

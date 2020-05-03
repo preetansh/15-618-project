@@ -80,3 +80,35 @@ Mean degree : 5.98394 Stdev degree : 0.702961
 Nodes : 4026819 Edges : 16108474
 Min degree : 2 Max degree : 6 Median degree : 4
 Mean degree : 4.0003 Stdev degree : 0.118263
+
+
+################################################################
+Deciding Threshold
+							 5		10		100		1000
+Copaper (0.5 mill nodes)   
+				seq		   0.85	   3.707   44.49	43.97
+				base	  16.09   69.134   823.8    823
+				warp	   2.05	   8.041	95.1    93.3
+				# BFS 		52		12	     1		 1		
+333SP (3.7 mill nodes)   
+				seq		   195.2   195.2   196.5	197.5
+				base	  406.5   406.5   408.1    408.7
+				warp	   88.5	   88.3	   87.5    86.471
+				# BFS 		1		1	     1		 1		
+Venturi (4 mill nodes)   
+				seq		   1.59    69.2   139.5	   
+				base	   8.27   588.7   463    
+				warp	   1.91	   41.5	   80.3    
+				# BFS 		87		2	     1
+Delaunay (16.7 mill nodes)   
+				seq		   298.6   596   	   
+				base	   704     1405      
+				warp	   234	   467	   
+				# BFS 		2		1	     				
+
+
+################################################################
+
+dataset		|	seq		|	BFS base	|	warp BFS	|
+
+coPaper		|
