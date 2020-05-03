@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string.h>
 #include <map>
+#include <tuple>
 
 /* See whether line of text is a comment */
 bool is_comment(char *s) {
@@ -135,6 +136,7 @@ void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
     int lineno = 0;
 
     int row,col,nnz;
+    std::map<std::pair<int,int>, int> edge_to_index;
 
     // try to open the file
     if ((fp = fopen(fname, "r")) == NULL) 
@@ -174,14 +176,15 @@ void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
     std::map<int, std::vector<int> > adj_lists;
     std::map<int, std::vector<int> > parent_lists; // store the parents
 
+    std::cout << "Starting to read" << "\n";
 
     int edge_from = -1, edge_to = -1;
     for (int i = 0; i < nnz; i++) {
         if (!isWeighted) {
             fscanf(fp, "%d %d\n", &edge_from, &edge_to);
         } else {
-            int weight;
-            fscanf(fp, "%d %d %d\n", &edge_from, &edge_to, &weight);
+            float weight;
+            fscanf(fp, "%d %d %f\n", &edge_from, &edge_to, &weight);
         }
 
         // set adjacency list
@@ -204,20 +207,24 @@ void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
             parent_lists[edge_from].push_back(edge_to);
         }
 
+        edge_to_index[std::pair<int,int> (edge_to, edge_from)] = i;
         roots[edge_from] = false;
         leaves[edge_to] = false;
 
     } // all edges done
 
+    std::cout << "Edges read" << "\n";
+
     // find number of roots and put a back edge for 0
     std::vector<int> root_ids;
 
     for (int i = 1; i < (nnode + 1) ; i++) { // zero should not be counted here
-        if (roots[i]) {
+        if (roots[i]) { 
             root_ids.push_back(i);
             std::vector<int> p_list;
             p_list.push_back(0);
             parent_lists[i] = p_list;
+            edge_to_index[std::pair<int,int> (0, i)] = nnz + root_ids.size() - 1;
         }
     }
 
@@ -228,6 +235,7 @@ void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
 
     nedges += nroots; // insertion of new edges (0 -> roots)
 
+    std::cout << "Roots identified" << "\n";
     offsets[0] = 0;
     parent_offsets[0] = 0;
 
@@ -267,6 +275,8 @@ void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
     offsets[nnode + 1] = prev_offset;
     parent_offsets[nnode + 1] = p_offset;
 
+    std::cout << "Adjacency list made" << "\n";
+
     // find the offsets of children in the parent adjacency list
     // parent_offsets, parents
     child_to_parent_index = (int *) malloc(sizeof(int) * (nedges));
@@ -275,9 +285,18 @@ void Graph::ReadDFSGraph(const char* fname, bool isWeighted) {
         int num_parents = parent_offsets[i+1] - parent_offsets[i];
         for (int j = 0; j < num_parents; j++) {
             int i_p = parents[i_p_offset + j];
-            child_to_parent_index[i_p_offset + j] = indexOfChild(i, i_p);
+            int index_from_map = edge_to_index[std::pair<int,int> (i_p, i)];
+            if (i_p == 0) {
+                index_from_map -= nnz;
+            }
+            else {
+                index_from_map += nroots;
+            }
+            child_to_parent_index[i_p_offset + j] = index_from_map;
         }
     }
+
+    std::cout << "Child to parent index created" << "\n";
 }
 
 

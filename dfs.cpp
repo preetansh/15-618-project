@@ -136,7 +136,7 @@ void printDFSResults(int** results, int nnodes) {
 	}
 }
 
-void runDfsGpu(Graph* g) {
+void runDfsGpu(Graph* g, int** results) {
 
 	int nnodes = g->GetNodes();
 
@@ -163,10 +163,20 @@ void runDfsGpu(Graph* g) {
     DfsCuda(nnodes, g->GetEdges(), g->GetOffsets(), g->GetNeighbours(), g->GetLeaves(), g->GetParentOffsets(),
      g->GetParents(), g->GetChildToParentIndex(), cuda_results, zeta);
 
-    std::cout << "Zeta" << "\n";
-	for(int i = 0; i <= nnodes; i++) {
-		std::cout << i << " - " << zeta[i] << "\n";
+    // uncomment to check for zeta
+ //    std::cout << "Zeta" << "\n";
+	// for(int i = 0; i <= nnodes; i++) {
+	// 	std::cout << i << " - " << zeta[i] << "\n";
+	// }
+
+	for(int i = 0; i <= g->GetNodes(); i++) {
+		if (results[1][i] != cuda_results[1][i]) {
+			std::cout << "Wrong parent for " << i << "\n";
+			break;
+		}
 	}
+
+	std::cout << "DFS Check complete" << "\n";
 
     free(cuda_pre_order);
     free(cuda_parent);
@@ -177,7 +187,7 @@ void runDfsGpu(Graph* g) {
 
 int main() {
 	Graph* g = new Graph();
-	g->ReadDFSGraph("data/sample2.mtx", false);
+	g->ReadDFSGraph("data/USAir97.mtx", true);
 	int nnodes = g->GetNodes();
 
 	std::cout << "Read Graph for DFS" << "\n";
@@ -211,7 +221,7 @@ int main() {
 	// printDFSResults(results, nnodes); // uncomment to print the dfs results
 
  	// Now run GPU
-	runDfsGpu(g);
+	runDfsGpu(g, results);
 
 
 	free(pre_order);
