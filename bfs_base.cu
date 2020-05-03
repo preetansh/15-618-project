@@ -5,6 +5,7 @@
 #include <driver_functions.h>
 
 #include "CycleTimer.h"
+#include "bfsUtils.h"
 
 #define ZERO 0
 #define W_SIZE 32 // Virtual Warp size
@@ -127,8 +128,12 @@ bfs_baseline_kernel(int N, int curr, int* levels, int* offsets,
     }
 }
 
+/*
+ * Perform BFS on GPU using CUDA
+ * @arg BFSType: Which BFS algo to use, 0 => Baseline, 1 => Warp BFS
+ */
 void
-BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
+BfsCuda(int N, int M, int* offsets, int* neighbours, int* globalLevels, int BFSType, int updateThreshold) {
 
     int totalBytes = sizeof(int) * (2 * N + M + 3);
 
@@ -142,13 +147,15 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     int warpsPerBlock = threadsPerBlock / W_SIZE;
     int numOfWarps = (N + CHUNK_SIZE - 1) / CHUNK_SIZE;
     const int numBlocksWarpBFS = (numOfWarps + warpsPerBlock - 1) /  warpsPerBlock;
-    printf("For warp BFS %d %d %d %d\n", threadsPerBlock, warpsPerBlock, numBlocksWarpBFS, numOfWarps);
+    
+    if (BFSType == 0)   printf("For baseline BFS %d %d\n", threadsPerBlock, blocks);
+    if (BFSType == 1)   printf("For warp BFS %d %d %d %d\n", threadsPerBlock, warpsPerBlock, numBlocksWarpBFS, numOfWarps);
+    
     int nnodes = N;
     int nedges = M;
     int* finished;
     finished = (int *) malloc(sizeof(int));
     (*finished) = 1;
-    levels[1] = 1;
 
     int* device_offsets;
     int* device_neighbours;
@@ -169,38 +176,59 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     //
     cudaMemcpy(device_offsets, offsets, (nnodes+2) * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_neighbours, neighbours, nedges * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(device_levels, levels, (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_finished, finished, 1 * sizeof(int), cudaMemcpyHostToDevice);
-
-
+    
     // run kernel
-    double startTime2 = CycleTimer::currentSeconds();
-    // setup the levels array
-    // setup_levels_kernel<<<blocks, threadsPerBlock>>>(nnodes, device_levels);
-    // cudaDeviceSynchronize();
+    int numBFSCalls = 0;
+    double kernelTime = 0.0;
+    int root = 1;
+    while (root != 0) {
+        // Init the levels array for this BFS
+        int* levels = (int *)calloc(nnodes+1, sizeof(int));
+        levels[root] = 1;
+        cudaMemcpy(device_levels, levels, (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
 
-    // // run bfs_baseline_kernel
-    int curr = 1;
-    do {
-      *finished = 1;
-      cudaMemcpy(device_finished, finished, 1 * sizeof(int), cudaMemcpyHostToDevice);
-      // call baseline kernel
-      // bfs_baseline_kernel<<<blocks, threadsPerBlock>>>(nnodes, curr++,
-      //   device_levels, device_offsets, device_neighbours, device_finished);
-      
-      // call warp BFS kernel
-      warp_bfs_kernel<<<numBlocksWarpBFS, threadsPerBlock, warpsPerBlock * sizeof(warpmem_t)>>>(nnodes, curr++,
-      device_levels, device_offsets, device_neighbours, device_finished);
-      
-      cudaDeviceSynchronize();
-      cudaMemcpy(finished, device_finished, 1 * sizeof(int), cudaMemcpyDeviceToHost);
-    } while(!((*finished) == 1));
-    double endTime2 = CycleTimer::currentSeconds();
+        double strtTime = CycleTimer::currentSeconds();
+        
+        // run bfs_baseline_kernel for this root
+        int curr = 1;
+        do {
+            *finished = 1;
+            cudaMemcpy(device_finished, finished, 1 * sizeof(int), cudaMemcpyHostToDevice);
+          
+            if (BFSType == 0) {
+                // call baseline kernel
+                bfs_baseline_kernel<<<blocks, threadsPerBlock>>>(nnodes, curr++,
+                device_levels, device_offsets, device_neighbours, device_finished);
+            } else {
+                // call warp BFS kernel
+                warp_bfs_kernel<<<numBlocksWarpBFS, threadsPerBlock, warpsPerBlock * sizeof(warpmem_t)>>>(nnodes, curr++,
+                device_levels, device_offsets, device_neighbours, device_finished);
+            }
+          
+          
+            cudaDeviceSynchronize();
+            cudaMemcpy(finished, device_finished, 1 * sizeof(int), cudaMemcpyDeviceToHost);
+        } while(!((*finished) == 1));
+        
+        double enTime = CycleTimer::currentSeconds();
+        
+        //
+        // copy result from GPU using cudaMemcpy
+        //
+        cudaMemcpy(levels, device_levels, (nnodes+1) * sizeof(int), cudaMemcpyDeviceToHost);
 
-    //
-    // copy result from GPU using cudaMemcpy
-    //
-    cudaMemcpy(levels, device_levels, (nnodes+1) * sizeof(int), cudaMemcpyDeviceToHost);
+        // move visited to visitedGlobal and get next root
+        std::pair<int, int> update = updateGlobalVisited(globalLevels, levels, nnodes);
+        if (update.second >= updateThreshold) {
+            // Add to total time
+            kernelTime += enTime - strtTime;
+            numBFSCalls++;
+        }
+        root = update.first;
+
+        free(levels);
+    }
 
     // end timing after result has been copied back into host memory
     double endTime = CycleTimer::currentSeconds();
@@ -211,8 +239,8 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels) {
     }
 
     double overallDuration = endTime - startTime;
-    double overallDuration2 = endTime2 - startTime2;
-    printf("Kernel Running Time: %.3f ms\n", 1000.f * overallDuration2);
+    double avgKernelTime = kernelTime / numBFSCalls;
+    printf("Kernel Running Time: %.3f ms\n", 1000.f * avgKernelTime);
     printf("Overall: %.3f ms\t\t[%.3f GB/s]\n", 1000.f * overallDuration, toBW(totalBytes, overallDuration));
 
     // free memory buffers on the GPU

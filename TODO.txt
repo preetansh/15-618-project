@@ -1,0 +1,6 @@
+TODO:
+
+- Should also have a balanced graph in analysis
+
+
+\/ While taking avg time for BFS, consider only depths greater than 1

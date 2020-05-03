@@ -6,23 +6,26 @@
 #include "graph.h"
 #include "CycleTimer.h"
 
-void BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels);
+#define UPDATE_THRESHOLD 10 // Min. number of level updates this BFS to be considered
+
+void BfsCuda(int N, int M, int* offsets, int* neighbours, int* levels, int BFSType, int updateThreshold);
 void printCudaInfo();
+std::pair<int, int> updateGlobalVisited(int* visitedGlobal, int* visited, int n);
 
 // return GB/s
 float toBW(int bytes, float sec) {
   return static_cast<float>(bytes) / (1024. * 1024. * 1024.) / sec;
 }
 
-void BFSSeq (Graph* g, int* visited) {
+void BFSSeq (Graph* g, int root, int* visited) {
 	std::queue<int> pending;
 
 	int* offsets = g->GetOffsets();
 	int* neighbors = g->GetNeighbours();
 
 	// Add starting node
-	visited[1] = 1;
-	pending.push(1);
+	visited[root] = 1;
+	pending.push(root);
 
 	// Start BFS loop
 	while (!pending.empty()) {
@@ -52,16 +55,20 @@ void BFSSeq (Graph* g, int* visited) {
  * File locations: 
  * road_usa: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx"
  * ca2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx"
+ * il2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/il2010/il2010.mtx"
  * hugebubbles-00020: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx"
- *
- *
+ * auto: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/auto/auto.mtx"
+ * 333SP: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/333SP/333SP.mtx"
+ * coPaper: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/coPapersDBLP/coPapersDBLP.mtx" 
+ * venturi: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/venturiLevel3/venturiLevel3.mtx"
+ * delaunay: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/delaunay_n24/delaunay_n24.mtx"
  */
 
 int main()
 {
 	Graph* g = new Graph();
 
-	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx";
+	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx";
 	std::cout << "Reading " << filename << "\n";
 
 	double startTime = CycleTimer::currentSeconds();
@@ -75,26 +82,52 @@ int main()
 	int* offsets = g->GetOffsets();
 	int n = g->GetNodes();
 	int m = g->GetEdges();
-	int* levels = (int *) calloc((n + 1), sizeof(int));
-	int* visited = (int *)calloc(g->GetNodes()+1, sizeof(int));
+	int* visitedGlobal = (int *)calloc(g->GetNodes()+1, sizeof(int));
 
-	startTime = CycleTimer::currentSeconds();
-	BFSSeq(g, visited);
-	endTime = CycleTimer::currentSeconds();
-	std::cout << "Sequential Single Thread BFS completed in " << (endTime - startTime) << std::endl;
+	int numBFSCalls = 0;
+	double timeForSeqBFS = 0.0;
+	int root = 1;
+	while (root != 0) {
+		// Init the visited array for this BFS
+		int* visited = (int *)calloc(g->GetNodes()+1, sizeof(int));
+		visited[root] = 1;
+
+		// Start BFS with this root
+		startTime = CycleTimer::currentSeconds();
+		BFSSeq(g, root, visited);
+		endTime = CycleTimer::currentSeconds();
+
+		// move visited to visitedGlobal and get next root
+		std::pair<int, int> update = updateGlobalVisited(visitedGlobal, visited, n);
+		if (update.second >= UPDATE_THRESHOLD) {
+			// Add to total time
+			timeForSeqBFS += (endTime - startTime);
+			numBFSCalls++;
+		}
+		root = update.first;
+
+		free(visited);
+	}
+	std::cout << "Sequential Single Thread BFS completed in " << (timeForSeqBFS / numBFSCalls)  * 1000.f << " ms" << std::endl;
 
 	// check the state of the gpu
 	printCudaInfo();
 
-	// run the main cuda program (timing starts inside)
-    BfsCuda(n, m, offsets, neighbours, levels);
+	// run the baseline cuda program (timing starts inside)
+	int* levelsBase = (int *) calloc((n + 1), sizeof(int));
+    BfsCuda(n, m, offsets, neighbours, levelsBase, 0, UPDATE_THRESHOLD);
+    free(levelsBase);
+
+    // run the baseline cuda program (timing starts inside)
+	int* levels = (int *) calloc((n + 1), sizeof(int));
+    BfsCuda(n, m, offsets, neighbours, levels, 1, UPDATE_THRESHOLD);
 
 	// checking GPU output
 	bool correct = true;
 	for (int i = 1; i <= n; i++) {
-		if (visited[i] != levels[i]) {
+		if (visitedGlobal[i] != levels[i]) {
 			std::cout << "Sequential and Parallel conflict at " << i << std::endl;
-			std::cout << "Sequential level  " << visited[i] << std::endl;
+			std::cout << "Sequential level  " << visitedGlobal[i] << std::endl;
 			std::cout << "Parallel level " << levels[i] << std::endl;
 			correct = false;
 			break;
@@ -104,21 +137,24 @@ int main()
 	std::cout << "Correctness : " << correct << "\n";
 
 	// Create a map to analyze output levels
-	// std::map<int, int> levelCounts; 
-	// for (int i=0; i<=n; i++) {
-	// 	if (levelCounts.count(visited[i]) == 0) {
-	// 		levelCounts[visited[i]] = 0;
-	// 	}
+	std::map<int, int> levelCounts; 
+	for (int i=0; i<=n; i++) {
+		if (levelCounts.count(visitedGlobal[i]) == 0) {
+			levelCounts[visitedGlobal[i]] = 0;
+		}
 
-	// 	levelCounts[visited[i]]++;
-	// }
+		levelCounts[visitedGlobal[i]]++;
+	}
 
-	// for (std::map<int,int>::iterator it=levelCounts.begin(); it!=levelCounts.end(); it++) {
-	// 	std::cout << "# of Nodes with level " << it->first << ": " << it->second << std::endl;
-	// }
-	
+	int totl = -1;
+	for (std::map<int,int>::iterator it=levelCounts.begin(); it!=levelCounts.end(); it++) {
+		std::cout << "# of Nodes with level " << it->first << ": " << it->second << std::endl;
+		totl += it->second;
+	}
+	std::cout << "Total nodes " << n << ", accounted " << totl << std::endl;
+	std::cout << "Total BFSs considered " << numBFSCalls << std::endl;
 
-	free(visited);
+	free(visitedGlobal);
 	free(levels);
 	g->FreeGraph();
 	delete(g);
