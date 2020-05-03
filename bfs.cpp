@@ -5,7 +5,6 @@
 
 #include "graph.h"
 #include "CycleTimer.h"
-// #include "bfsUtils.h"
 
 #define UPDATE_THRESHOLD 10 // Min. number of level updates this BFS to be considered
 
