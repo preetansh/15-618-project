@@ -9,7 +9,7 @@
 #include "CycleTimer.h"
 
 void DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, int* parents, 
-	int* child_to_parent, int** results, int* zeta);
+	int* child_to_parent, int** results, long long* zeta);
 void printCudaInfo();
 
 // return GB/s
@@ -147,7 +147,7 @@ void runDfsGpu(Graph* g, int** results) {
 	int* cuda_pre_order = (int *) calloc((nnodes + 1), sizeof(int)); // calloc assures 0 at each position
 	int* cuda_parent = (int *) calloc((nnodes + 1), sizeof(int));
 	int* cuda_post_order = (int *) calloc((nnodes + 1), sizeof(int));
-	int* zeta = (int *) calloc((nnodes + 1), sizeof(int));
+	long long* zeta = (long long *) calloc((nnodes + 1), sizeof(long long));
 
 	for (int i = 0; i < (nnodes + 1); i++) {
 		cuda_pre_order[i] = -1;
@@ -165,14 +165,24 @@ void runDfsGpu(Graph* g, int** results) {
 
     // uncomment to check for zeta
  //    std::cout << "Zeta" << "\n";
+ //    int min_zeta = 2147483647;
+ //    int max_zeta = -2147483648;
 	// for(int i = 0; i <= nnodes; i++) {
-	// 	std::cout << i << " - " << zeta[i] << "\n";
+	// 	if(min_zeta < zeta[i]) {
+	// 		min_zeta = zeta[i];
+	// 	}
+	// 	if(max_zeta > zeta[i]) {
+	// 		max_zeta = zeta[i];
+	// 	}
+	// 	std::cout << zeta[i] << "\n";
 	// }
+
+	// std::cout << "Maximum zeta is " << max_zeta << "\n";
+	// std::cout << "Minimum zeta is " << min_zeta << "\n";
 
 	for(int i = 0; i <= g->GetNodes(); i++) {
 		if (results[1][i] != cuda_results[1][i]) {
-			std::cout << "Wrong parent for " << i << "\n";
-			break;
+			std::cout << " ****** " << "Wrong parent for " << i << "\n";
 		}
 	}
 
@@ -187,7 +197,7 @@ void runDfsGpu(Graph* g, int** results) {
 
 int main() {
 	Graph* g = new Graph();
-	g->ReadDFSGraph("data/USAir97.mtx", true);
+	g->ReadDFSGraph("data/road_usa.mtx", false);
 	int nnodes = g->GetNodes();
 
 	std::cout << "Read Graph for DFS" << "\n";
