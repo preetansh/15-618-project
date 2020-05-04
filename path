@@ -1,0 +1,28 @@
+/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx
+
+/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/il2010/il2010.mtx
+
+/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx
+
+/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx
+
+/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/europe_osm/europe_osm.mtx
+
+/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/tx2010/tx2010.mtx
+
+/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_central/road_central.mtx
+
+/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/germany_osm/germany_osm.mtx
+
+Results: (Thread Level)
+
+Graph name   |    Sequential (All 3) |  Kernel (Parent + Discovery) |  Total Parallel
+
+germany_osm			2386 ms					2778 ms						2912 ms
+road_central		3914.67ms				1531.952 ms					1701.463 ms
+europe_osm			9973.66ms				23067.739 ms				23575.412 ms	
+hugebubbles-00020	8258.67ms				13796.069 ms				14012.865 ms
+road_usa			4912.11ms				24573.350 ms				24808.950 ms
+il2010				119.363ms				51.664 ms					117.766 ms		
+ca2010				193.883ms				60.229 ms					129.110 ms
+tx2010				236.706ms				83.320 ms					152.833 ms

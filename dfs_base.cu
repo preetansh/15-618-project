@@ -3,6 +3,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <driver_functions.h>
+#include <thrust/sort.h>
+#include <thrust/execution_policy.h>
 
 #include "CycleTimer.h"
 
@@ -189,6 +191,24 @@ check_all_explored(int nnodes, bool* all_explored, bool* explored) {
     }
 }
 
+__global__ void
+setup_device_values(int nnodes, int* values) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index <= nnodes) {
+        values[index] = index;
+    }
+}
+
+__global__ void
+use_device_values(int nnodes, int*  device_values_3a, int* device_discovery) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index <= nnodes) {
+        int val = device_values_3a[index];
+        device_discovery[val] = index;
+    }
+}
+
+
 void
 DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, 
     int* parents, int* child_to_parent, int* parent_to_child, int** results, long long* zeta) {
@@ -354,19 +374,46 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
 
     cudaDeviceSynchronize();
 
+    // Finish Phase 2
+    //
+    //
+    std::cout << "Calculated parents" << "\n";
+    //
+    //
+    // Phase 3a (Calculate discovery time using thrust and cost)
+    int* device_values_3a;
+    cudaMalloc(&device_values_3a, (nnodes+1) * sizeof(int));
+
+    setup_device_values<<<blocks, threadsPerBlock>>>(nnodes, device_values_3a);
+    cudaDeviceSynchronize();
+
+    thrust::sort_by_key(thrust::device, device_cost, device_cost + nnodes + 1, device_values_3a);
+
+    cudaDeviceSynchronize();
+
+    use_device_values<<<blocks, threadsPerBlock>>>(nnodes, device_values_3a, device_discovery);
+
+    cudaDeviceSynchronize();
+
+    cudaFree(device_values_3a);
+
+    // Finish phase 3a
+    //
+    //
+
     double endTime2 = CycleTimer::currentSeconds();
 
-    std::cout << "Calculated parents" << "\n";
+    std::cout << "Calculated discovery time" << "\n";
 
     //
     // copy result from GPU using cudaMemcpy
     //
     cudaMemcpy(zeta, device_zeta, (nnodes+1) * sizeof(long long), cudaMemcpyDeviceToHost);
     cudaMemcpy(results[1], device_result_parents, (nnodes+1) * sizeof(int), cudaMemcpyDeviceToHost);
-    // cudaMemcpy(results[0], device_cost, (nnodes+1) * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(results[0], device_discovery, (nnodes+1) * sizeof(int), cudaMemcpyDeviceToHost);
 
     // for (int i = 0; i <= nnodes; i++) {
-    //     std::cout << "Parent of " << i << " is : " << results[1][i] << " and cost is : " << results[0][i] << "\n";
+    //     std::cout << "Discovery time " << i << " is : " << results[0][i] << "\n";
     // }
 
     // cudaMemcpy(edge_weights, device_edge_weights, nedges * sizeof(int), cudaMemcpyDeviceToHost);

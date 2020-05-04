@@ -180,6 +180,14 @@ void runDfsGpu(Graph* g, int** results) {
 	// std::cout << "Maximum zeta is " << max_zeta << "\n";
 	// std::cout << "Minimum zeta is " << min_zeta << "\n";
 
+    for(int i = 0; i <= g->GetNodes(); i++) {
+		if (results[0][i] != cuda_results[0][i]) {
+			std::cout << " ****** " << "Wrong discovery time for " << i << "\n";
+			break;
+		}
+	}
+
+    std::cout << "DFS Check for Discovery complete" << "\n";
 	for(int i = 0; i <= g->GetNodes(); i++) {
 		if (results[1][i] != cuda_results[1][i]) {
 			std::cout << " ****** " << "Wrong parent for " << i << "\n";
@@ -187,7 +195,7 @@ void runDfsGpu(Graph* g, int** results) {
 		}
 	}
 
-	std::cout << "DFS Check complete" << "\n";
+	std::cout << "DFS Check for Parent complete" << "\n";
 
     free(cuda_pre_order);
     free(cuda_parent);
@@ -198,7 +206,7 @@ void runDfsGpu(Graph* g, int** results) {
 
 int main() {
 	Graph* g = new Graph();
-	g->ReadDFSGraph("data/road_usa.mtx", false);
+	g->ReadDFSGraph("/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/tx2010/tx2010.mtx", true);
 	int nnodes = g->GetNodes();
 
 	std::cout << "Read Graph for DFS" << "\n";
@@ -227,7 +235,7 @@ int main() {
 	double endTime = CycleTimer::currentSeconds();
 
 
-	std::cout << "Time taken for dfs is " << (endTime - startTime) << "\n";
+	std::cout << "Time taken for dfs is " << (endTime - startTime) * 1000 << "ms \n";
 
 	// printDFSResults(results, nnodes); // uncomment to print the dfs results
 
