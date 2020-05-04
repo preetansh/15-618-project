@@ -101,6 +101,15 @@ exchange_c_q(int N, bool* q_queue, bool* c_queue) {
 }
 
 __global__ void
+zero_child_costs(int nedges, long long* child_costs) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (index < nedges) {
+        child_costs[index] = 0;
+    }
+}
+
+__global__ void
 setup_phase_2(int N, long long* cost, bool* q_queue, bool* c_queue) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -117,9 +126,10 @@ setup_phase_2(int N, long long* cost, bool* q_queue, bool* c_queue) {
     }
 }
 
+
 __global__ void
 calculate_cost(int nnodes, long long* cost, bool *q_queue, bool *c_queue, int* offsets, 
-    int* neighbours, long long* edge_weights, int* results, bool* explored) {
+    int* neighbours, long long* edge_weights, int* parent_to_child, long long* child_costs, bool* explored) {
 
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index <= nnodes) {
@@ -128,25 +138,9 @@ calculate_cost(int nnodes, long long* cost, bool *q_queue, bool *c_queue, int* o
             int c_offset = offsets[index];
             int num_children = offsets[index + 1] - c_offset;
             for (int i = 0; i < num_children; i++) {
-                int child = neighbours[i + c_offset];
                 long long new_cost = cost[index] + edge_weights[i + c_offset];
-                // if (child == 18887414) {
-                //     printf("Parent %d and child %d and edge_cost is %lld and total cost is %lld\n", 
-                //         index, child, edge_weights[i+c_offset], new_cost);
-                // }
-                // if (child == 18899121) {
-                //     printf("Parent %d and child %d and edge_cost is %lld and total cost is %lld\n", 
-                //         index, child, edge_weights[i+c_offset], new_cost);
-                // }
-                edge_weights[i + c_offset] = 0;
-                while (atomicMin(&cost[child], new_cost) > new_cost) {} // TODO : Ask Preetansh
-                long long local_cost = cost[child];
-                if (local_cost == new_cost) {
-                    if (local_cost < 0) {
-                        printf("Cost is negative %d\n", child);
-                    }
-                    results[child] = index;
-                }
+                int parent_to_child_index = parent_to_child[c_offset + i];
+                child_costs[parent_to_child_index] = new_cost;
             }
             explored[index] = true;
         }
@@ -154,21 +148,33 @@ calculate_cost(int nnodes, long long* cost, bool *q_queue, bool *c_queue, int* o
 }
 
 __global__ void
-construct_c_queue(int nnodes, bool *c_queue, int *p_offsets, int* parents, bool* explored) {
+construct_c_queue(int nnodes, bool *c_queue, int *p_offsets, int* parents,
+    long long* child_costs, int* results, long long* cost, bool* explored) {
+
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index <= nnodes && (explored[index] == false)) {
         int p_start = p_offsets[index];
         int num_parents = p_offsets[index + 1] - p_start;
         bool flag = true;
+        long long local_cost = LLONG_MAX;
+        int local_parent = -1;
         for (int i = 0; i < num_parents; i++) {
             if (explored[parents[i+p_start]] == false) {
                 flag = false;
                 break;
             } 
+            else {
+                if (child_costs[p_start + i] < local_cost) {
+                    local_cost = child_costs[p_start + i];
+                    local_parent = parents[i + p_start];
+                }
+            }
         }
         if (flag) {
             // printf("C_queue entering : %d\n", index);
             c_queue[index] = true;
+            cost[index] = local_cost;
+            results[index] = local_parent;
         }
     }
 }
@@ -185,7 +191,7 @@ check_all_explored(int nnodes, bool* all_explored, bool* explored) {
 
 void
 DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, 
-    int* parents, int* child_to_parent, int** results, long long* zeta) {
+    int* parents, int* child_to_parent, int* parent_to_child, int** results, long long* zeta) {
 
     int totalBytes = sizeof(int) * (6 * N + 3 * M + 8) + sizeof(bool) * (N + 1);
 
@@ -209,12 +215,14 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     int* device_finish;
     long long* device_zeta;
     int* device_child_to_parent;
+    int* device_parent_to_child;
 
     long long* device_edge_weights;
     long long* device_cost;
     bool* device_c_queue;
     bool* device_q_queue;
     bool* device_explored_2;
+    long long* device_child_costs;
     //
     // allocate device memory buffers on the GPU using cudaMalloc
     //
@@ -228,8 +236,10 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     cudaMalloc(&device_finish, (nnodes + 1) * sizeof(int));
     cudaMalloc(&device_zeta, (nnodes + 1) * sizeof(long long));
     cudaMalloc(&device_child_to_parent, (nedges) * sizeof(int));
+    cudaMalloc(&device_parent_to_child, (nedges) * sizeof(int));
 
     cudaMalloc(&device_edge_weights, nedges * sizeof(long long));
+    cudaMalloc(&device_child_costs, nedges * sizeof(long long));
     cudaMalloc(&device_c_queue, (nnodes + 1) * sizeof(bool));
     cudaMalloc(&device_q_queue, (nnodes + 1) * sizeof(bool));
     cudaMalloc(&device_cost, (nnodes + 1)*sizeof(long long));
@@ -252,6 +262,7 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     cudaMemcpy(device_finish, results[2], (nnodes + 1) * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_zeta, zeta, (nnodes + 1) * sizeof(long long), cudaMemcpyHostToDevice);
     cudaMemcpy(device_child_to_parent, child_to_parent, (nedges) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_parent_to_child, parent_to_child, (nedges) * sizeof(int), cudaMemcpyHostToDevice);
 
 
     // run kernel
@@ -310,20 +321,22 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     // Phase 2 (Calculate cost of paths and parents)
 
     // setup the cost and the queues
+    zero_child_costs<<<blocks_edges, threadsPerBlock>>>(nedges, device_child_costs);
+    cudaDeviceSynchronize();
     setup_phase_2<<<blocks, threadsPerBlock>>>(nnodes, device_cost, device_q_queue, device_c_queue);
 
     bool* device_all_explored;
     cudaMalloc(&device_all_explored, 1 * sizeof(bool));
 
     while(true) {
-        bool all_explored = true;              
+        bool all_explored = true;             
 
-        calculate_cost<<<blocks, threadsPerBlock>>>(nnodes, device_cost, device_q_queue, device_c_queue, 
-            device_offsets, device_neighbours, device_edge_weights, device_result_parents, device_explored_2);
+        calculate_cost<<<blocks, threadsPerBlock>>>(nnodes, device_cost, device_q_queue, device_c_queue, device_offsets, 
+            device_neighbours, device_edge_weights, device_parent_to_child, device_child_costs, device_explored_2);
         cudaDeviceSynchronize();
 
         construct_c_queue<<<blocks, threadsPerBlock>>>(nnodes, device_c_queue, device_p_offsets, 
-            device_parents, device_explored_2);
+            device_parents, device_child_costs, device_result_parents, device_cost, device_explored_2);
         cudaDeviceSynchronize();
 
         exchange_c_q<<<blocks, threadsPerBlock>>>(nnodes, device_q_queue, device_c_queue);
@@ -390,8 +403,10 @@ DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offset
     cudaFree(device_finish);
     cudaFree(device_zeta);
     cudaFree(device_child_to_parent);
+    cudaFree(device_parent_to_child);
 
     cudaFree(device_edge_weights);
+    cudaFree(device_child_costs);
     cudaFree(device_cost);
     cudaFree(device_c_queue);
     cudaFree(device_q_queue);

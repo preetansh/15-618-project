@@ -9,7 +9,7 @@
 #include "CycleTimer.h"
 
 void DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, int* parents, 
-	int* child_to_parent, int** results, long long* zeta);
+	int* child_to_parent, int* parent_to_child, int** results, long long* zeta);
 void printCudaInfo();
 
 // return GB/s
@@ -161,7 +161,7 @@ void runDfsGpu(Graph* g, int** results) {
 
 	// run the main cuda program (timing starts inside)
     DfsCuda(nnodes, g->GetEdges(), g->GetOffsets(), g->GetNeighbours(), g->GetLeaves(), g->GetParentOffsets(),
-     g->GetParents(), g->GetChildToParentIndex(), cuda_results, zeta);
+     g->GetParents(), g->GetChildToParentIndex(), g->GetParentToChildIndex(), cuda_results, zeta);
 
     // uncomment to check for zeta
  //    std::cout << "Zeta" << "\n";
@@ -183,6 +183,7 @@ void runDfsGpu(Graph* g, int** results) {
 	for(int i = 0; i <= g->GetNodes(); i++) {
 		if (results[1][i] != cuda_results[1][i]) {
 			std::cout << " ****** " << "Wrong parent for " << i << "\n";
+			break;
 		}
 	}
 
