@@ -92,6 +92,9 @@ void iterative_dfs(Graph *g, int root, int** results) {
 			if (results[0][v] == -1) { // not discovered
 				results[0][v] = d;
 				d++;
+				if (d == (g->GetNodes() + 1)) {
+					return;
+				}
 				int offset = offsets[v];
 				int num_neighbours = offsets[v+1] - offset;
 				for (int i = num_neighbours-1; i >= 0; i--) {
@@ -206,7 +209,7 @@ void runDfsGpu(Graph* g, int** results) {
 
 int main() {
 	Graph* g = new Graph();
-	g->ReadDFSGraph("/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/tx2010/tx2010.mtx", true);
+	g->ReadDFSGraph("/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/germany_osm/germany_osm.mtx", false);
 	int nnodes = g->GetNodes();
 
 	std::cout << "Read Graph for DFS" << "\n";

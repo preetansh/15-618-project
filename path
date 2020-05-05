@@ -23,6 +23,119 @@ road_central		3914.67ms				1531.952 ms					1701.463 ms
 europe_osm			9973.66ms				23067.739 ms				23575.412 ms	
 hugebubbles-00020	8258.67ms				13796.069 ms				14012.865 ms
 road_usa			4912.11ms				24573.350 ms				24808.950 ms
-il2010				119.363ms				51.664 ms					117.766 ms		
+il2010				120.686ms				51.664 ms					117.766 ms		
 ca2010				193.883ms				60.229 ms					129.110 ms
 tx2010				236.706ms				83.320 ms					152.833 ms
+
+road_usa
+Kernel 1 time : 28.3416
+Kernel 2 time : 23918.6
+Kernel 3 time : 505.693
+Kernel 4 time : 30.0966
+
+europe_osm
+Kernel 1 time : 1683.47
+Kernel 2 time : 11749.5
+Kernel 3 time : 1802.41
+Kernel 4 time : 1842.14
+
+hugebubbles-00020
+Kernel 1 time : 40.1997
+Kernel 2 time : 13294.1
+Kernel 3 time : 304.147
+Kernel 4 time : 47.0777
+
+Results: (Thread Level + Optimization to the kernel 2)
+
+Graph name   |    Sequential (All 3) |  Kernel (Parent + Discovery) |  Total Parallel
+
+germany_osm			2386 ms					1144.421 ms					1278.976 ms
+road_central		3914.67ms				993.507 ms					1150.633 ms
+europe_osm			9973.66ms				15161.077 ms				15632.116 ms
+hugebubbles-00020	8258.67ms				969.332 ms					2680.389 ms
+road_usa			4912.11ms				1446.476 ms					1669.629 ms
+il2010				119.363ms				25.189 ms					91.333 ms	
+ca2010				193.883ms				39.531 ms					106.324 ms
+tx2010				236.706ms				50.501 ms					120.205 ms
+
+
+road_usa
+Kernel 1 time : 28.7123
+Kernel 2 time : 787.101
+Kernel 3 time : 505.834
+Kernel 4 time : 30.1149
+
+europe_osm
+Kernel 1 time : 1686.16
+Kernel 2 time : 3837.41
+Kernel 3 time : 1802.19
+Kernel 4 time : 1841.91
+
+hugebubbles-00020
+Kernel 1 time : 39.4477
+Kernel 2 time : 469.143
+Kernel 3 time : 304.07
+Kernel 4 time : 47.1273
+
+
+Results: (Thread Level + Optimization to the kernel 2 + Sequential only doing discovery)
+
+Graph name   |    Sequential (2) |  Kernel (Parent + Discovery) |  Total Parallel
+
+germany_osm			2417.7ms				1144.421 ms					1278.976 ms
+road_central		3971.29ms				993.507 ms					1150.633 ms
+europe_osm			10004.6ms				15161.077 ms				15632.116 ms
+hugebubbles-00020	8328.23ms				969.332 ms					2680.389 ms
+road_usa			4894.76ms				1446.476 ms					1669.629 ms
+il2010				119.363ms				25.189 ms					91.333 ms	
+ca2010				195.485ms				39.531 ms					106.324 ms
+tx2010				238.746ms				50.501 ms					120.205 ms
+
+
+road_usa
+Kernel 1 time : 28.7123
+Kernel 2 time : 787.101
+Kernel 3 time : 505.834
+Kernel 4 time : 30.1149
+
+europe_osm
+Kernel 1 time : 1686.16
+Kernel 2 time : 3837.41
+Kernel 3 time : 1802.19
+Kernel 4 time : 1841.91
+
+hugebubbles-00020
+Kernel 1 time : 39.4477
+Kernel 2 time : 469.143
+Kernel 3 time : 304.07
+Kernel 4 time : 47.1273
+
+germany_osm
+Kernel 1 time : 128.188
+Kernel 2 time : 298.554
+Kernel 3 time : 152.51
+Kernel 4 time : 143.864
+
+il2010
+Kernel 1 time : 0.585862
+Kernel 2 time : 12.8159
+Kernel 3 time : 8.24182
+Kernel 4 time : 0.946321
+
+ca2010
+Kernel 1 time : 0.902279
+Kernel 2 time : 20.5248
+Kernel 3 time : 13.218
+Kernel 4 time : 1.55372
+
+tx2010
+Kernel 1 time : 1.14458
+Kernel 2 time : 26.4834
+Kernel 3 time : 17.0385
+Kernel 4 time : 1.83224
+
+road_central
+Kernel 1 time : 19.0363
+Kernel 2 time : 555.603
+Kernel 3 time : 353.021
+Kernel 4 time : 16.0555
