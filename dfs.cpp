@@ -9,7 +9,7 @@
 #include "CycleTimer.h"
 
 void DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, int* parents, 
-	int* child_to_parent, int* parent_to_child, int** results, long long* zeta);
+	int* child_to_parent, int* parent_to_child, int** results);
 void printCudaInfo();
 
 // return GB/s
@@ -146,42 +146,22 @@ void runDfsGpu(Graph* g, int** results) {
 	// check the state of the gpu
 	printCudaInfo();
 
-	int** cuda_results = (int **) malloc(sizeof(int *) * 3);
+	int** cuda_results = (int **) malloc(sizeof(int *) * 2);
 	int* cuda_pre_order = (int *) calloc((nnodes + 1), sizeof(int)); // calloc assures 0 at each position
 	int* cuda_parent = (int *) calloc((nnodes + 1), sizeof(int));
-	int* cuda_post_order = (int *) calloc((nnodes + 1), sizeof(int));
-	long long* zeta = (long long *) calloc((nnodes + 1), sizeof(long long));
 
 	for (int i = 0; i < (nnodes + 1); i++) {
 		cuda_pre_order[i] = -1;
 		cuda_parent[i] = -1;
-		cuda_post_order[i] = -1;
 	}
 
 	cuda_results[0] = cuda_pre_order;
 	cuda_results[1] = cuda_parent;
-	cuda_results[2] = cuda_post_order;
 
 	// run the main cuda program (timing starts inside)
     DfsCuda(nnodes, g->GetEdges(), g->GetOffsets(), g->GetNeighbours(), g->GetLeaves(), g->GetParentOffsets(),
-     g->GetParents(), g->GetChildToParentIndex(), g->GetParentToChildIndex(), cuda_results, zeta);
+     g->GetParents(), g->GetChildToParentIndex(), g->GetParentToChildIndex(), cuda_results);
 
-    // uncomment to check for zeta
- //    std::cout << "Zeta" << "\n";
- //    int min_zeta = 2147483647;
- //    int max_zeta = -2147483648;
-	// for(int i = 0; i <= nnodes; i++) {
-	// 	if(min_zeta < zeta[i]) {
-	// 		min_zeta = zeta[i];
-	// 	}
-	// 	if(max_zeta > zeta[i]) {
-	// 		max_zeta = zeta[i];
-	// 	}
-	// 	std::cout << zeta[i] << "\n";
-	// }
-
-	// std::cout << "Maximum zeta is " << max_zeta << "\n";
-	// std::cout << "Minimum zeta is " << min_zeta << "\n";
 
     for(int i = 0; i <= g->GetNodes(); i++) {
 		if (results[0][i] != cuda_results[0][i]) {
@@ -202,14 +182,12 @@ void runDfsGpu(Graph* g, int** results) {
 
     free(cuda_pre_order);
     free(cuda_parent);
-    free(cuda_post_order);
     free(cuda_results);
-    free(zeta);
 }
 
 int main() {
 	Graph* g = new Graph();
-	g->ReadDFSGraph("/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/germany_osm/germany_osm.mtx", false);
+	g->ReadDFSGraph("/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx", false);
 	int nnodes = g->GetNodes();
 
 	std::cout << "Read Graph for DFS" << "\n";

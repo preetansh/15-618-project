@@ -98,11 +98,66 @@ Kernel 2 time : 787.101
 Kernel 3 time : 505.834
 Kernel 4 time : 30.1149
 
+	Chunk size : 100
+	Kernel 1 time : 28.7164
+	Kernel 2 time : 801.42
+	Kernel 3 time : 178.969
+	Kernel 4 time : 30.116
+
+	Chunk size : 10
+	Kernel 1 time : 28.2249
+	Kernel 2 time : 793.502
+	Kernel 3 time : 214.412
+	Kernel 4 time : 30.1185
+
+	Chunk size : 32
+	Kernel 1 time : 28.6957
+	Kernel 2 time : 793.996
+	Kernel 3 time : 181.673
+	Kernel 4 time : 30.1187
+
+	Chunk size : 64
+	Kernel 1 time : 28.5604
+	Kernel 2 time : 799.896
+	Kernel 3 time : 178.031
+	Kernel 4 time : 30.1093
+
+	Chunk size : 128
+	Kernel 1 time : 28.1771
+	Kernel 2 time : 792.814
+	Kernel 3 time : 178.743
+	Kernel 4 time : 30.1307
+
+	Chunk size : 1024
+	Kernel 1 time : 28.272
+	Kernel 2 time : 782.503
+	Kernel 3 time : 181.349
+	Kernel 4 time : 30.122
+
+	Chunk size : 4096
+	Kernel 1 time : 28.7254
+	Kernel 2 time : 799.327
+	Kernel 3 time : 185.502
+	Kernel 4 time : 30.1088
+
 europe_osm
 Kernel 1 time : 1686.16
 Kernel 2 time : 3837.41
 Kernel 3 time : 1802.19
 Kernel 4 time : 1841.91
+
+	Chunk size : 128
+	Kernel 1 time : 1685.18
+	Kernel 2 time : 3837.21
+	Kernel 3 time : 9517.79
+	Kernel 4 time : 1849.26
+
+	Chunk size : 32
+	Kernel 1 time : 1685.26
+	Kernel 2 time : 3837.62
+	Kernel 3 time : 9946.89
+	Kernel 4 time : 1848.62
+
 
 hugebubbles-00020
 Kernel 1 time : 39.4477
@@ -110,11 +165,23 @@ Kernel 2 time : 469.143
 Kernel 3 time : 304.07
 Kernel 4 time : 47.1273
 
+	Chunk size : 128
+	Kernel 1 time : 39.2294
+	Kernel 2 time : 466.188
+	Kernel 3 time : 181.885
+	Kernel 4 time : 47.1002
+
 germany_osm
 Kernel 1 time : 128.188
 Kernel 2 time : 298.554
 Kernel 3 time : 152.51
 Kernel 4 time : 143.864
+
+	Chunk size : 128
+	Kernel 1 time : 127.92
+	Kernel 2 time : 298.474
+	Kernel 3 time : 602.631
+	Kernel 4 time : 143.851
 
 il2010
 Kernel 1 time : 0.585862
@@ -122,11 +189,23 @@ Kernel 2 time : 12.8159
 Kernel 3 time : 8.24182
 Kernel 4 time : 0.946321
 
+	Chunk size: 128
+	Kernel 1 time : 0.586296
+	Kernel 2 time : 12.8107
+	Kernel 3 time : 2.71403
+	Kernel 4 time : 0.939808
+
 ca2010
 Kernel 1 time : 0.902279
 Kernel 2 time : 20.5248
 Kernel 3 time : 13.218
 Kernel 4 time : 1.55372
+
+	Chunk size: 128
+	Kernel 1 time : 0.895083
+	Kernel 2 time : 20.5193
+	Kernel 3 time : 4.18351
+	Kernel 4 time : 1.55567
 
 tx2010
 Kernel 1 time : 1.14458
@@ -134,8 +213,42 @@ Kernel 2 time : 26.4834
 Kernel 3 time : 17.0385
 Kernel 4 time : 1.83224
 
+	Chunk size: 128
+	Kernel 1 time : 1.14773
+	Kernel 2 time : 26.4837
+	Kernel 3 time : 5.47577
+	Kernel 4 time : 1.82859
+
 road_central
 Kernel 1 time : 19.0363
 Kernel 2 time : 555.603
 Kernel 3 time : 353.021
 Kernel 4 time : 16.0555
+
+	Chunksize: 128
+	Kernel 1 time : 19.0224
+	Kernel 2 time : 555.227
+	Kernel 3 time : 101.913
+	Kernel 4 time : 16.0525
+
+
+
+Results: (Thread Level + Optimization to the kernel 2 + Optimization to the kernel 3 + Sequential only doing discovery)
+
+Graph name   |    Sequential (2) |  Kernel (Parent + Discovery) |  Total Parallel
+
+germany_osm			2417.7ms				1597.871 ms					1730.427 ms
+road_central		3971.29ms				742.390 ms					899.356 ms
+europe_osm			10004.6ms				22729.935 ms				23422.756 ms
+hugebubbles-00020	8328.23ms				851.549 ms					1072.135 ms
+road_usa			4894.76ms				1118.920 ms					1345.993 ms
+il2010				119.363ms				19.628 ms					86.284 ms	
+ca2010				195.485ms				30.480 ms					98.956 ms
+tx2010				238.746ms				38.998 ms					109.255 ms
+
+
+road_usa Kernel 3 (edge aligned)
+Kernel 1 time : 28.7314
+Kernel 2 time : 786.914
+Kernel 3 time : 112.084
+Kernel 4 time : 196.686
