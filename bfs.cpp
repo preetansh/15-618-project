@@ -53,22 +53,24 @@ void BFSSeq (Graph* g, int root, int* visited) {
 /*
  *
  * File locations: 
+ * coPaper: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/coPapersDBLP/coPapersDBLP.mtx" 
  * road_usa: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx"
+ * hugebubbles-00020: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx"
  * ca2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx"
  * il2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/il2010/il2010.mtx"
- * hugebubbles-00020: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx"
  * auto: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/auto/auto.mtx"
- * 333SP: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/333SP/333SP.mtx"
- * coPaper: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/coPapersDBLP/coPapersDBLP.mtx" 
- * venturi: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/venturiLevel3/venturiLevel3.mtx"
  * delaunay: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/delaunay_n24/delaunay_n24.mtx"
+ * europe_osm: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/europe_osm/europe_osm.mtx"
+ * 333SP: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/333SP/333SP.mtx"
+ * venturi: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/venturiLevel3/venturiLevel3.mtx"
+ * rgg : "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/rgg_n_2_21_s0/rgg_n_2_21_s0.mtx"
  */
 
 int main()
 {
 	Graph* g = new Graph();
 
-	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx";
+	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx";
 	std::cout << "Reading " << filename << "\n";
 
 	double startTime = CycleTimer::currentSeconds();
@@ -99,16 +101,18 @@ int main()
 
 		// move visited to visitedGlobal and get next root
 		std::pair<int, int> update = updateGlobalVisited(visitedGlobal, visited, n);
-		if (update.second >= UPDATE_THRESHOLD) {
+		// if (update.second >= UPDATE_THRESHOLD) {
 			// Add to total time
 			timeForSeqBFS += (endTime - startTime);
 			numBFSCalls++;
-		}
-		root = update.first;
+		// }
+		root = 0;//update.first;
 
 		free(visited);
 	}
-	std::cout << "Sequential Single Thread BFS completed in " << (timeForSeqBFS / numBFSCalls)  * 1000.f << " ms" << std::endl;
+	double avgSeqTime = (timeForSeqBFS / numBFSCalls);
+	printf("Sequential Single Thread BFS Time: %.3f ms\n", 1000.f * avgSeqTime);
+	// std::cout << "Sequential Single Thread BFS completed in " << (timeForSeqBFS / numBFSCalls)  * 1000.f << " ms" << std::endl;
 
 	// check the state of the gpu
 	printCudaInfo();
