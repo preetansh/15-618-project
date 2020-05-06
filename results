@@ -97,18 +97,54 @@ Copaper (0.5 mill nodes)
 				# BFS 		1		1	     1		 1		
 Venturi (4 mill nodes)   
 				seq		   1.59    69.2   139.5	   
-				base	   8.27   588.7   463    
+				base	   8.27   233.7   463    
 				warp	   1.91	   41.5	   80.3    
 				# BFS 		87		2	     1
 Delaunay (16.7 mill nodes)   
 				seq		   298.6   596   	   
 				base	   704     1405      
 				warp	   234	   467	   
-				# BFS 		2		1	     				
+				# BFS 		2		1	  
+
+Kron19 (16.7 mill nodes)   
+				seq		      		79   	   
+				base	   	        22      
+				warp	      	   3.2	   
+				# BFS 		 		1
+
+Kron20 (16.7 mill nodes)   
+				seq		      		173   	   
+				base	   	        47      
+				warp	      	   	7.9	   
+				# BFS 		 		1	     				
 
 
 ################################################################
 
 dataset		|	seq		|	BFS base	|	warp BFS	|
 
-coPaper		|
+coPaper		| 3.707	    |   69.134      |   8.041       |
+
+road_usa(0)*|  72.243	|	11.608		|	57.376		|
+
+hugebub(0)	| 1208.576	| 	82.798		| 	216.717		|		
+
+ca2010*		| 4.31		|	72.2		| 	3.588	 	|
+
+il2010*		| 14.678	|	7.37		| 	17.9		|
+
+auto*		| 23		| 	 132		|  	24			|
+
+delauney *  | 596		|    1405		|  467			|
+
+europe (0)	| 126.886	| 	7.234		|  29.342		|
+
+333SP*		| 195.2	    |   406  		|	88.3		|
+
+venturi* 	| 69.2		|	588.7		|	41.5		|
+
+kron19 		| 79		|	22			|	3.2			|
+
+kron20		| 172.8		|  47.796		|	7.9			|
+
+kron21		| 391		|  115			|	28.5		|

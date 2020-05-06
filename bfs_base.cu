@@ -220,12 +220,12 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* globalLevels, int BFST
 
         // move visited to visitedGlobal and get next root
         std::pair<int, int> update = updateGlobalVisited(globalLevels, levels, nnodes);
-        // if (update.second >= updateThreshold) {
+        if (update.second >= updateThreshold) {
             // Add to total time
             kernelTime += enTime - strtTime;
             numBFSCalls++;
-        // }
-        root = 0;//update.first;
+        }
+        root = update.first;
 
         free(levels);
     }

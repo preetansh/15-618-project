@@ -64,13 +64,16 @@ void BFSSeq (Graph* g, int root, int* visited) {
  * 333SP: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/333SP/333SP.mtx"
  * venturi: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/venturiLevel3/venturiLevel3.mtx"
  * rgg : "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/rgg_n_2_21_s0/rgg_n_2_21_s0.mtx"
+ * kron19: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/kron_g500-logn19/kron_g500-logn19.mtx"
+ * kron20: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/kron_g500-logn20/kron_g500-logn20.mtx"
+ * kron20: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/kron_g500-logn21/kron_g500-logn21.mtx"
  */
 
 int main()
 {
 	Graph* g = new Graph();
 
-	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx";
+	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/kron_g500-logn21/kron_g500-logn21.mtx";
 	std::cout << "Reading " << filename << "\n";
 
 	double startTime = CycleTimer::currentSeconds();
@@ -101,12 +104,12 @@ int main()
 
 		// move visited to visitedGlobal and get next root
 		std::pair<int, int> update = updateGlobalVisited(visitedGlobal, visited, n);
-		// if (update.second >= UPDATE_THRESHOLD) {
+		if (update.second >= UPDATE_THRESHOLD) {
 			// Add to total time
 			timeForSeqBFS += (endTime - startTime);
 			numBFSCalls++;
-		// }
-		root = 0;//update.first;
+		}
+		root = update.first;
 
 		free(visited);
 	}
