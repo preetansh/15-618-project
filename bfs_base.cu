@@ -46,7 +46,7 @@ memcpy_SIMD (int W_OFF, int cnt, int* dest, int* src) {
 }
 
 /*
- *
+ * expand_bfs_SIMD: explore edges array in SIMD fashion
  */
 __device__ void
 expand_bfs_SIMD (int W_OFF, int cnt, int* edges, int* levels, int curr, int* finished) {
@@ -62,6 +62,11 @@ expand_bfs_SIMD (int W_OFF, int cnt, int* edges, int* levels, int curr, int* fin
     __threadfence_block();
 }
 
+/*
+ * warp_bfs_kernel: kernel to process node in vertex frontier in a 
+ * SIMD fashion by using all threads in a warp to process a node's 
+ * adjacency list. Each warp processes CHUNK_SIZE nodes
+ */
 __global__ void
 warp_bfs_kernel (int N, int curr, int* levels, int* offsets, 
     int* neighbours, int* finished) {
@@ -78,9 +83,7 @@ warp_bfs_kernel (int N, int curr, int* levels, int* offsets,
         num_nodes_to_process = N - (W_ID * CHUNK_SIZE);
     }
 
-    // if (W_OFF == 0) 
-    //     printf("From kernel %d %d %d %d\n", W_ID, LOCAL_W_ID, index, num_nodes_to_process);
-
+    
     extern __shared__ warpmem_t shared_warp_mem[];
     warpmem_t* my_warp_mem = shared_warp_mem + LOCAL_W_ID;
 

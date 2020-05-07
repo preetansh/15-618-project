@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string.h>
 #include <map>
-#include <tuple>
+// #include <tuple>
 
 /* See whether line of text is a comment */
 bool is_comment(char *s) {
