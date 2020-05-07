@@ -224,6 +224,7 @@ BfsCuda(int N, int M, int* offsets, int* neighbours, int* globalLevels, int BFST
             // Add to total time
             kernelTime += enTime - strtTime;
             numBFSCalls++;
+            // break;
         }
         root = update.first;
 

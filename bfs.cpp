@@ -53,16 +53,16 @@ void BFSSeq (Graph* g, int root, int* visited) {
 /*
  *
  * File locations: 
- * coPaper: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/coPapersDBLP/coPapersDBLP.mtx" 
- * road_usa: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx"
- * hugebubbles-00020: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx"
+  * coPaper: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/coPapersDBLP/coPapersDBLP.mtx" <unweighted>
+ * road_usa: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx" <unweighted>
+ * hugebubbles-00020: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/hugebubbles-00020/hugebubbles-00020.mtx" <unweighted> 
  * ca2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/ca2010/ca2010.mtx"
  * il2010: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/il2010/il2010.mtx"
- * auto: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/auto/auto.mtx"
- * delaunay: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/delaunay_n24/delaunay_n24.mtx"
- * europe_osm: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/europe_osm/europe_osm.mtx"
- * 333SP: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/333SP/333SP.mtx"
- * venturi: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/venturiLevel3/venturiLevel3.mtx"
+ * auto: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/auto/auto.mtx" <unweighted>
+ * delaunay: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/delaunay_n24/delaunay_n24.mtx" <unweighted>
+ * europe_osm: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/europe_osm/europe_osm.mtx" <unweighted>
+ * 333SP: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/333SP/333SP.mtx" <unweighted>
+ * venturi: "/afs/andrew.cmu.edu/usr21/preetang/private/courses/15618/15-618-project/data/venturiLevel3/venturiLevel3.mtx" <unweighted>
  * rgg : "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/rgg_n_2_21_s0/rgg_n_2_21_s0.mtx"
  * kron19: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/kron_g500-logn19/kron_g500-logn19.mtx"
  * kron20: "/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/kron_g500-logn20/kron_g500-logn20.mtx"
@@ -73,7 +73,7 @@ int main()
 {
 	Graph* g = new Graph();
 
-	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/kron_g500-logn21/kron_g500-logn21.mtx";
+	char* filename = (char *)"/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/kron_g500-logn19/kron_g500-logn19.mtx";
 	std::cout << "Reading " << filename << "\n";
 
 	double startTime = CycleTimer::currentSeconds();
@@ -108,6 +108,7 @@ int main()
 			// Add to total time
 			timeForSeqBFS += (endTime - startTime);
 			numBFSCalls++;
+			// break;
 		}
 		root = update.first;
 
