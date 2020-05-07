@@ -8,8 +8,57 @@
 #include <stack>
 #include "CycleTimer.h"
 
+void DfsCuda(int N, int M, int* offsets, int* neighbours, bool* leaves, int* p_offsets, int* parents, 
+	int* child_to_parent, int* parent_to_child, int** results);
+void printCudaInfo();
+
+// return GB/s
+float toBW(int bytes, float sec) {
+  return static_cast<float>(bytes) / (1024. * 1024. * 1024.) / sec;
+}
+
 int d = 0;
 int f = 0;
+
+void printGraphInfo(Graph* g) {
+	std::cout << "Printing Graph Info" << "\n";
+
+	int nnodes = g->GetNodes();
+
+	int* offsets = g->GetOffsets();
+	int* neighbours = g->GetNeighbours();
+	for (int i = 0; i<=nnodes; i++) {
+		int offset = offsets[i];
+		for (int j = 0; j < (offsets[i+1] - offsets[i]); j++) {
+			int child = neighbours[offset + j];
+			std::cout << i << " - " << child << "\n";
+		}
+	}
+	std::cout << "Next : Parents and child to parent index" << "\n";
+	int* p_offsets = g->GetParentOffsets();
+	int* p_parents = g->GetParents();
+	int* c_p = g->GetChildToParentIndex();
+	for (int i = 0; i<=nnodes; i++) {
+		int offset = p_offsets[i];
+		for (int j = 0; j < (p_offsets[i+1] - p_offsets[i]); j++) {
+			int child = p_parents[offset + j];
+			std::cout << i << " - " << child << " , " << c_p[offset + j] << "\n";
+		}
+	}
+
+	std::cout << "Next : Roots" << "\n";
+	bool* r = g->GetRoots();
+	for (int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << r[i] << "\n";
+	}
+
+	std::cout << "Next : Leaves" << "\n";
+	bool* l = g->GetLeaves();
+	for (int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << l[i] << "\n";
+	}
+
+}
 
 void recursive_dfs(Graph* g, int root, int** results) {
 	results[0][root] = d;
@@ -43,6 +92,9 @@ void iterative_dfs(Graph *g, int root, int** results) {
 			if (results[0][v] == -1) { // not discovered
 				results[0][v] = d;
 				d++;
+				if (d == (g->GetNodes() + 1)) {
+					return;
+				}
 				int offset = offsets[v];
 				int num_neighbours = offsets[v+1] - offset;
 				for (int i = num_neighbours-1; i >= 0; i--) {
@@ -66,28 +118,80 @@ void iterative_dfs(Graph *g, int root, int** results) {
 }
 
 void dfs(Graph *g, int** results) {
-	for (int i = 1; i <= g->GetNodes(); i++) {
-		if (results[2][i] == -1) {
-			iterative_dfs(g, i, results);
-		} 
+	iterative_dfs(g, 0, results);
+}
+
+void printDFSResults(int** results, int nnodes) {
+	std::cout << "Printing DFS Results" << "\n";
+	std::cout << "Discovery time" << "\n";
+	for(int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << results[0][i] << "\n";
 	}
+
+	std::cout << "Parents" << "\n";
+	for(int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << results[1][i] << "\n";
+	}
+
+	std::cout << "Finish time" << "\n";
+	for(int i = 0; i <= nnodes; i++) {
+		std::cout << i << " - " << results[2][i] << "\n";
+	}
+}
+
+void runDfsGpu(Graph* g, int** results) {
+
+	int nnodes = g->GetNodes();
+
+	// check the state of the gpu
+	printCudaInfo();
+
+	int** cuda_results = (int **) malloc(sizeof(int *) * 2);
+	int* cuda_pre_order = (int *) calloc((nnodes + 1), sizeof(int)); // calloc assures 0 at each position
+	int* cuda_parent = (int *) calloc((nnodes + 1), sizeof(int));
+
+	for (int i = 0; i < (nnodes + 1); i++) {
+		cuda_pre_order[i] = -1;
+		cuda_parent[i] = -1;
+	}
+
+	cuda_results[0] = cuda_pre_order;
+	cuda_results[1] = cuda_parent;
+
+	// run the main cuda program (timing starts inside)
+    DfsCuda(nnodes, g->GetEdges(), g->GetOffsets(), g->GetNeighbours(), g->GetLeaves(), g->GetParentOffsets(),
+     g->GetParents(), g->GetChildToParentIndex(), g->GetParentToChildIndex(), cuda_results);
+
+
+    for(int i = 0; i <= g->GetNodes(); i++) {
+		if (results[0][i] != cuda_results[0][i]) {
+			std::cout << " ****** " << "Wrong discovery time for " << i << "\n";
+			break;
+		}
+	}
+
+    std::cout << "DFS Check for Discovery complete" << "\n";
+	for(int i = 0; i <= g->GetNodes(); i++) {
+		if (results[1][i] != cuda_results[1][i]) {
+			std::cout << " ****** " << "Wrong parent for " << i << "\n";
+			break;
+		}
+	}
+
+	std::cout << "DFS Check for Parent complete" << "\n";
+
+    free(cuda_pre_order);
+    free(cuda_parent);
+    free(cuda_results);
 }
 
 int main() {
 	Graph* g = new Graph();
-	g->ReadGraph("data/coPaper.mtx", false, true);
-	std::cout << "Read the graph" << "\n";
-
+	g->ReadDFSGraph("/afs/cs.cmu.edu/academic/class/15418-s20/public/projects/gautamj+preetang/data/road_usa/road_usa.mtx", false);
 	int nnodes = g->GetNodes();
 
-	int* offsets = g->GetOffsets();
-	int* neighbours = g->GetNeighbours();
-	for (int i = 1; i<=nnodes; i++) {
-		int offset = offsets[i];
-		for (int j = 0; j < (offsets[i+1] - offsets[i]); j++) {
-			int child = neighbours[offset + j];
-		}
-	}
+	std::cout << "Read Graph for DFS" << "\n";
+	// printGraphInfo(g); // uncomment to print the info of graph
 
 	double startTime = CycleTimer::currentSeconds();
 
@@ -112,14 +216,13 @@ int main() {
 	double endTime = CycleTimer::currentSeconds();
 
 
-	std::cout << "Time taken for dfs is " << (endTime - startTime) << "\n";
-	// print results
-	// for (int i = 0; i < 3; i++) {
-	// 	for (int j = 1; j <= nnodes; j++) {
-	// 			std::cout << j << " - " << results[i][j] << "\n";
-	// 	}
-	// 	std::cout << "Changing of result" << "\n";
-	// } 
+	std::cout << "Time taken for dfs is " << (endTime - startTime) * 1000 << "ms \n";
+
+	// printDFSResults(results, nnodes); // uncomment to print the dfs results
+
+ 	// Now run GPU
+	runDfsGpu(g, results);
+
 
 	free(pre_order);
 	free(parent);
